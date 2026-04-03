@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đặt hàng thành công — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__actions" id="navActions"></div>
+</nav>
+
+<div class="container" style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding-top:100px;padding-bottom:4rem">
+  <div style="text-align:center;max-width:480px">
+    <div style="width:80px;height:80px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1 style="font-size:2rem;font-weight:900;margin-bottom:0.75rem">Đặt hàng thành công!</h1>
+    <p style="color:var(--color-text-muted);margin-bottom:0.5rem">Cảm ơn bạn đã mua sắm tại MAISON.</p>
+    <p style="color:var(--color-text-muted);margin-bottom:2rem">Mã đơn hàng: <strong id="orderId" style="color:var(--color-primary)"></strong></p>
+
+    <div id="orderInfo" style="background:#fff;border:1px solid var(--color-border);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:2rem"></div>
+
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="orders.html" class="btn btn-dark">Xem đơn hàng</a>
+      <a href="products.html" class="btn btn-outline">Tiếp tục mua sắm</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  renderNavActions();
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get('orderId');
+  if (!orderId || !Auth.isLoggedIn()) { window.location.href = 'index.html'; return; }
+
+  document.getElementById('orderId').textContent = `#${orderId}`;
+
+  try {
+    const res = await api.orders.get(orderId);
+    if (res.success && res.data) {
+      const o = res.data;
+      document.getElementById('orderInfo').innerHTML = `
+        <div class="summary-row"><span style="color:var(--color-text-muted)">Trạng thái</span><span>${getStatusBadge(o.status)}</span></div>
+        <div class="summary-row"><span style="color:var(--color-text-muted)">Địa chỉ</span><span style="text-align:right;max-width:60%">${o.shippingAddress}</span></div>
+        <div class="summary-row"><span style="color:var(--color-text-muted)">Thanh toán</span><span>${o.paymentMethod}</span></div>
+        <div class="summary-row total"><span>Tổng thanh toán</span><span style="color:var(--color-cta)">${formatVND(o.finalAmount)}</span></div>
+      `;
+    }
+  } catch {}
+  updateCartCount();
+});
+</script>
+</body>
+</html>

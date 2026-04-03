@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài khoản bị vô hiệu hóa — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-background);
+      font-family: var(--font-body);
+      padding: 2rem;
+    }
+    .banned-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-xl);
+    }
+    .banned-icon {
+      width: 80px;
+      height: 80px;
+      background: #FEE2E2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+    .banned-icon svg {
+      width: 40px;
+      height: 40px;
+      color: #DC2626;
+      stroke: #DC2626;
+    }
+    .banned-title {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 0.75rem;
+    }
+    .banned-subtitle {
+      font-size: 0.95rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+    .banned-reason {
+      display: inline-block;
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius-md);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin: 1rem 0 1.5rem;
+    }
+    .banned-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .banned-actions a {
+      display: block;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: var(--transition-base);
+    }
+    .btn-home {
+      background: var(--color-primary);
+      color: white;
+    }
+    .btn-home:hover { background: var(--color-secondary); }
+    .btn-contact {
+      background: transparent;
+      color: var(--color-text-muted);
+      border: 1px solid var(--color-border);
+    }
+    .btn-contact:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-muted);
+    }
+    .banned-brand {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--color-text);
+      margin-bottom: 2rem;
+    }
+    .banned-brand span { color: var(--color-cta); }
+  </style>
+</head>
+<body>
+<div class="banned-card">
+  <div class="banned-brand">MAISON<span>.</span></div>
+
+  <div class="banned-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+    </svg>
+  </div>
+
+  <h1 class="banned-title">Tài khoản bị vô hiệu hóa</h1>
+  <p class="banned-subtitle">Tài khoản của bạn đã bị vô hiệu hóa và không thể đăng nhập vào lúc này.</p>
+
+  <span class="banned-reason" id="banReason">Tài khoản bị khóa bởi quản trị viên</span>
+
+  <p class="banned-subtitle" style="font-size:0.85rem">
+    Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ để được giải quyết.
+  </p>
+
+  <div class="banned-actions" style="margin-top:1.5rem">
+    <a href="index.html" class="btn-home">Về trang chủ</a>
+    <a href="mailto:support@maison.vn" class="btn-contact">Liên hệ hỗ trợ</a>
+  </div>
+</div>
+
+<script>
+  // Show a custom reason if passed as URL param
+  const params = new URLSearchParams(window.location.search);
+  const reason = params.get('reason');
+  if (reason === 'devtools') {
+    document.getElementById('banReason').textContent = 'Vi phạm chính sách bảo mật';
+  }
+  // Clear any stored auth so they can't use the old token
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('userInfo');
+</script>
+<script src="js/security.js"></script>
+</body>
+</html>

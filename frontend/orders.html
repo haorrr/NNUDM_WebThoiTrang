@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đơn hàng của tôi — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <span class="section-label">Cá nhân</span>
+    <h1>Đơn hàng của tôi</h1>
+  </div>
+</div>
+
+<div class="container page-content">
+  <div class="user-page-layout">
+    <!-- Sidebar -->
+    <div class="user-sidebar">
+      <div class="user-sidebar__card">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Đang tải...</div>
+        <div class="user-email" id="userEmail"></div>
+      </div>
+      <nav class="user-menu">
+        <a href="profile.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Thông tin cá nhân
+        </a>
+        <a href="orders.html" class="active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Đơn hàng của tôi
+        </a>
+        <a href="#" onclick="handleLogout()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Đăng xuất
+        </a>
+      </nav>
+    </div>
+
+    <!-- Orders List -->
+    <div>
+      <!-- Status Filter Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap">
+        <button class="btn btn-sm active-tab" data-status="" onclick="filterOrders('',this)">Tất cả</button>
+        <button class="btn btn-sm btn-outline" data-status="PENDING" onclick="filterOrders('PENDING',this)">Chờ xác nhận</button>
+        <button class="btn btn-sm btn-outline" data-status="CONFIRMED" onclick="filterOrders('CONFIRMED',this)">Đã xác nhận</button>
+        <button class="btn btn-sm btn-outline" data-status="SHIPPING" onclick="filterOrders('SHIPPING',this)">Đang giao</button>
+        <button class="btn btn-sm btn-outline" data-status="DELIVERED" onclick="filterOrders('DELIVERED',this)">Đã giao</button>
+        <button class="btn btn-sm btn-outline" data-status="CANCELLED" onclick="filterOrders('CANCELLED',this)">Đã hủy</button>
+      </div>
+      <style>.active-tab { background:var(--color-primary);color:#fff;border-color:var(--color-primary); }</style>
+
+      <div id="ordersList"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+let currentStatus = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  renderNavActions();
+  loadUserInfo();
+  loadOrders();
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+});
+
+async function loadUserInfo() {
+  try {
+    const res = await api.users.me();
+    if (res.success && res.data) {
+      const u = res.data;
+      const initials = u.name ? u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) : 'U';
+      document.getElementById('userAvatar').textContent = initials;
+      document.getElementById('userName').textContent = u.name || '';
+      document.getElementById('userEmail').textContent = u.email || '';
+    }
+  } catch {}
+}
+
+function filterOrders(status, btn) {
+  currentStatus = status;
+  document.querySelectorAll('[data-status]').forEach(b => {
+    b.classList.remove('active-tab');
+    b.className = b.className.replace('btn-outline','');
+    if (b !== btn) { b.classList.add('btn-outline'); } else { b.classList.add('active-tab'); }
+  });
+  loadOrders();
+}
+
+async function loadOrders() {
+  const container = document.getElementById('ordersList');
+  container.innerHTML = '<div class="skeleton" style="height:120px;border-radius:12px;margin-bottom:12px"></div>'.repeat(3);
+
+  const params = { page: 0, size: 20 };
+  if (currentStatus) params.status = currentStatus;
+
+  try {
+    const res = await api.orders.list(params);
+    if (res.success && res.data) {
+      const orders = res.data.content || [];
+      if (orders.length === 0) {
+        container.innerHTML = `<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><h3>Không có đơn hàng nào</h3><p>Bạn chưa có đơn hàng ${currentStatus ? 'với trạng thái này' : 'nào'}</p><a href="products.html" class="btn btn-primary btn-sm">Mua sắm ngay</a></div>`;
+        return;
+      }
+      container.innerHTML = orders.map(o => `
+        <div class="content-card" style="margin-bottom:1rem;cursor:pointer" onclick="window.location.href='order-detail.html?id=${o.id}'">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+            <div>
+              <span style="font-family:var(--font-heading);font-weight:700">Đơn hàng #${o.id}</span>
+              <span style="margin-left:12px">${getStatusBadge(o.status)}</span>
+            </div>
+            <span style="font-size:0.8rem;color:var(--color-text-muted)">${formatDate(o.createdAt)}</span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:0.75rem">
+            Địa chỉ: ${o.shippingAddress?.slice(0, 60)}${o.shippingAddress?.length > 60 ? '...' : ''}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-family:var(--font-heading);font-weight:700;font-size:1.05rem;color:var(--color-cta)">${formatVND(o.finalAmount)}</span>
+            <div style="display:flex;gap:8px">
+              ${(o.status === 'PENDING' || o.status === 'CONFIRMED') ? `<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();cancelOrder(${o.id})">Hủy đơn</button>` : ''}
+              <a href="order-detail.html?id=${o.id}" class="btn btn-xs btn-outline">Chi tiết</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch {
+    container.innerHTML = `<div class="alert alert-error">Không thể tải đơn hàng</div>`;
+  }
+}
+
+async function cancelOrder(id) {
+  if (!confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
+  try {
+    const res = await api.orders.cancel(id);
+    if (res.success) { showToast('Đã hủy đơn hàng'); loadOrders(); }
+  } catch (err) { showToast(err.message || 'Không thể hủy đơn', 'error'); }
+}
+</script>
+</body>
+</html>

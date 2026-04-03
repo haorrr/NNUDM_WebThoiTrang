@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danh mục — Admin MAISON</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../shared.css">
+</head>
+<body class="admin-page">
+<aside class="admin-sidebar">
+  <div class="sidebar-logo">MAISON<span>.</span></div>
+  <div class="sidebar-user"><div class="sidebar-user__name" id="sidebarUserName">Admin</div><div class="sidebar-user__role">Administrator</div></div>
+  <nav class="sidebar-nav">
+<div class="sidebar-section-title">Quản lý</div>
+    <a href="products.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>Sản phẩm</a>
+    <a href="categories.html" class="active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>Danh mục</a>
+    <a href="orders.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Đơn hàng</a>
+    <a href="flash-sales.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Flash Sale</a>
+    <a href="coupons.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Mã giảm giá</a>
+    <a href="users.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Người dùng</a>
+    <a href="reviews.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Đánh giá</a>
+  </nav>
+  <div class="sidebar-footer"><button class="btn btn-outline btn-sm" style="width:100%;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2)" onclick="handleLogout()">Đăng xuất</button></div>
+</aside>
+
+<main class="admin-main">
+  <div class="admin-topbar">
+    <h1>Danh mục sản phẩm</h1>
+    <button class="btn btn-primary btn-sm" onclick="openCatModal()">+ Thêm danh mục</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr><th>Tên danh mục</th><th>Slug</th><th>Danh mục cha</th><th>Sản phẩm</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+          <tbody id="catsTable"><tr><td colspan="6" style="text-align:center;padding:2rem">Đang tải...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="catModal">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 id="catModalTitle">Thêm danh mục</h3>
+      <button class="modal__close" onclick="closeModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="catModalAlert"></div>
+    <form id="catForm">
+      <div class="form-group"><label class="form-label">Tên danh mục *</label><input class="form-input" id="catName" required placeholder="Áo khoác"></div>
+      <div class="form-group"><label class="form-label">Slug (URL)</label><input class="form-input" id="catSlug" placeholder="ao-khoac"></div>
+      <div class="form-group">
+        <label class="form-label">Danh mục cha</label>
+        <select class="form-select" id="catParent"><option value="">Không có (danh mục gốc)</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Mô tả</label><textarea class="form-textarea" id="catDesc" rows="2" placeholder="Mô tả danh mục..."></textarea></div>
+      <input type="hidden" id="catId">
+    </form>
+    <div class="modal__footer">
+      <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
+      <button class="btn btn-primary" id="saveCatBtn" onclick="saveCat()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+let allCats = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn() || !Auth.isAdmin()) { window.location.href = '../login.html'; return; }
+  document.getElementById('sidebarUserName').textContent = Auth.getUser()?.name || 'Admin';
+  loadCategories();
+});
+
+async function loadCategories() {
+  try {
+    const res = await api.categories.list();
+    if (res.success) {
+      allCats = [];
+      function flatten(items, level = 0, parentName = null) {
+        items.forEach(c => {
+          allCats.push({ ...c, level, parentName });
+          if (c.children?.length) flatten(c.children, level + 1, c.name);
+        });
+      }
+      flatten(res.data || []);
+      renderTable();
+      renderParentOptions();
+    }
+  } catch { document.getElementById('catsTable').innerHTML = `<tr><td colspan="6" style="text-align:center;color:#DC2626;padding:1rem">Lỗi tải dữ liệu</td></tr>`; }
+}
+
+function renderTable() {
+  document.getElementById('catsTable').innerHTML = allCats.map(c => `
+    <tr>
+      <td><span style="padding-left:${c.level * 20}px">${c.level > 0 ? '└ ' : ''}${c.name}</span></td>
+      <td style="font-size:0.78rem;color:var(--color-text-muted)">${c.slug}</td>
+      <td style="font-size:0.82rem">${c.parentName || '—'}</td>
+      <td>${c.productCount || 0}</td>
+      <td>${getStatusBadge(c.status || 'ACTIVE')}</td>
+      <td><div class="actions">
+        <button class="btn btn-xs btn-outline" onclick="editCat(${c.id})">Sửa</button>
+        <button class="btn btn-xs btn-outline" onclick="toggleCat(${c.id})">${c.status === 'INACTIVE' ? 'Bật' : 'Ẩn'}</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteCat(${c.id}, '${c.name.replace(/'/g, "\\'")}', ${c.productCount || 0})">Xóa</button>
+      </div></td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Chưa có danh mục nào</td></tr>`;
+}
+
+function renderParentOptions() {
+  const sel = document.getElementById('catParent');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Không có (danh mục gốc)</option>' + allCats.filter(c => c.level === 0).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  sel.value = current;
+}
+
+function openCatModal(id = null) {
+  document.getElementById('catModalTitle').textContent = id ? 'Chỉnh sửa danh mục' : 'Thêm danh mục';
+  document.getElementById('catForm').reset(); document.getElementById('catId').value = id || '';
+  document.getElementById('catModalAlert').innerHTML = ''; renderParentOptions();
+  document.getElementById('catModal').classList.add('open');
+}
+
+async function editCat(id) {
+  openCatModal(id);
+  try {
+    const res = await api.categories.get(id);
+    if (res.success && res.data) {
+      const c = res.data;
+      document.getElementById('catName').value = c.name;
+      document.getElementById('catSlug').value = c.slug || '';
+      document.getElementById('catDesc').value = c.description || '';
+      if (c.parentId) document.getElementById('catParent').value = c.parentId;
+    }
+  } catch {}
+}
+
+function closeModal() { document.getElementById('catModal').classList.remove('open'); }
+
+async function saveCat() {
+  const id = document.getElementById('catId').value;
+  const alertBox = document.getElementById('catModalAlert');
+  alertBox.innerHTML = '';
+  const name = document.getElementById('catName').value.trim();
+  if (!name) { alertBox.innerHTML = `<div class="alert alert-error">Tên danh mục là bắt buộc</div>`; return; }
+  const data = {
+    name, slug: document.getElementById('catSlug').value.trim() || null,
+    description: document.getElementById('catDesc').value.trim() || null,
+    parentId: document.getElementById('catParent').value ? parseInt(document.getElementById('catParent').value) : null,
+  };
+  const btn = document.getElementById('saveCatBtn'); setLoading(btn, true);
+  try {
+    const res = id ? await api.categories.update(id, data) : await api.categories.create(data);
+    if (res.success) { closeModal(); showToast(id ? 'Đã cập nhật danh mục' : 'Đã thêm danh mục mới'); loadCategories(); }
+  } catch (err) { alertBox.innerHTML = `<div class="alert alert-error">${err.message || 'Có lỗi xảy ra'}</div>`; setLoading(btn, false); }
+}
+
+async function toggleCat(id) {
+  try { await api.categories.toggleStatus(id); showToast('Đã cập nhật trạng thái'); loadCategories(); }
+  catch { showToast('Không thể cập nhật', 'error'); }
+}
+
+async function deleteCat(id, name, productCount) {
+  if (productCount > 0) {
+    showToast(`Không thể xóa danh mục "${name}" vì còn ${productCount} sản phẩm`, 'error');
+    return;
+  }
+  if (!confirm(`Xóa danh mục "${name}"? Hành động này không thể hoàn tác.`)) return;
+  try {
+    await api.categories.delete(id);
+    showToast('Đã xóa danh mục');
+    loadCategories();
+  } catch (err) { showToast(err.message || 'Không thể xóa danh mục', 'error'); }
+}
+</script>
+</body>
+</html>

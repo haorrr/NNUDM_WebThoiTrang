@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAISON — Cửa Hàng Thời Trang Cao Cấp</title>
+  <meta name="description" content="Khám phá sự thanh lịch vượt thời gian với bộ sưu tập thời trang cao cấp được MAISON tuyển chọn một cách kỹ lưỡng. Quần áo, phụ kiện sang trọng và hơn thế nữa.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>M</text></svg>">
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <a href="#" class="navbar__logo">MAISON<span>.</span></a>
+
+    <div class="navbar__links" id="navLinks">
+      <a href="#products">Bộ sưu tập</a>
+      <a href="#story">Về chúng tôi</a>
+      <a href="#testimonials">Đánh giá</a>
+      <a href="#newsletter">Liên hệ</a>
+    </div>
+
+    <div class="navbar__actions" id="navActions">
+      <!-- Injected by api.js renderNavActions() -->
+    </div>
+    <button class="navbar__hamburger" id="hamburger" aria-label="Toggle menu" style="margin-left:8px; display:none;">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="hero">
+    <div class="hero__bg">
+      <img src="images/hero-bg.png" alt="Luxurious fashion atelier with elegant clothing">
+    </div>
+    <div class="hero__overlay"></div>
+    <div class="container">
+      <div class="hero__content">
+        <div class="hero__label">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Bộ Sưu Tập Mới 2026
+        </div>
+        <h1 class="hero__title">Định Hình Lại <span>Phong Cách</span></h1>
+        <p class="hero__subtitle">
+          Khám phá bộ sưu tập phong cách vượt thời gian của chúng tôi, nơi sự sang trọng hòa quyện cùng nghệ thuật chế tác đương đại. Mỗi sản phẩm đều mang một câu chuyện về sự thanh lịch.
+        </p>
+        <div class="hero__actions">
+          <a href="#products" class="btn btn-primary">
+            Mua Sắm Ngay
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+          <a href="#story" class="btn btn-secondary">Về Chúng Tôi</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURED PRODUCTS ===== -->
+  <section class="products" id="products">
+    <div class="container">
+      <div class="products__header reveal">
+        <span class="section-label">Lựa Chọn Đặc Biệt</span>
+        <h2 class="section-title">Sản Phẩm Nổi Bật</h2>
+        <p class="section-subtitle">
+          Những món đồ thiết yếu được tuyển chọn từ bộ sưu tập mới nhất. Chất liệu cao cấp, thiết kế vượt thời gian.
+        </p>
+      </div>
+
+      <div class="products__grid" id="homeProductsGrid">
+        <!-- Skeleton Loading -->
+        <div class="skeleton" style="height:360px;border-radius:12px"></div>
+        <div class="skeleton" style="height:360px;border-radius:12px"></div>
+        <div class="skeleton" style="height:360px;border-radius:12px"></div>
+        <div class="skeleton" style="height:360px;border-radius:12px"></div>
+      </div>
+
+      <div style="text-align: center; margin-top: var(--space-2xl);" class="reveal">
+        <a href="products.html" class="btn btn-outline">
+          Xem Tất Cả Sản Phẩm
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLASH SALE SECTION -->
+  <section id="flash-sale-section" style="display:none;background:linear-gradient(135deg,#7F1D1D,#DC2626,#F97316);padding:3rem 0">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <span style="color:rgba(255,255,255,0.8);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600">Ưu đãi có hạn</span>
+        <h2 id="fs-section-title" style="color:#fff;font-size:2rem;margin:8px 0">🔥 Flash Sale</h2>
+        <p id="fs-section-countdown" style="color:#FEF08A;font-size:1.1rem;font-weight:700"></p>
+      </div>
+      <div id="fs-section-grid" class="products__grid"></div>
+      <div style="text-align:center;margin-top:1.5rem">
+        <a id="fs-section-link" href="flash-sale.html" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.5)">Xem tất cả Flash Sale →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BRAND STORY ===== -->
+  <section class="brand-story" id="story">
+    <div class="container">
+      <div class="brand-story__grid">
+        <div class="brand-story__image reveal">
+          <img src="images/brand-story.png" alt="Fashion designer's workspace with premium materials">
+        </div>
+        <div class="brand-story__content reveal">
+          <span class="section-label">Câu Chuyện Của Chúng Tôi</span>
+          <h2 class="section-title">Chế Tác Bằng Đam Mê</h2>
+          <p class="brand-story__text">
+            Tại MAISON, chúng tôi tin rằng thời trang không chỉ là quần áo — đó là sự thể hiện bản sắc. 
+            Được thành lập vào năm 2018, chúng tôi đã cống hiến hết mình để tìm kiếm những chất liệu tốt nhất và hợp tác 
+            với những nghệ nhân lành nghề cùng chung tầm nhìn về sự thanh lịch vượt thời gian.
+          </p>
+          <p class="brand-story__text">
+            Mỗi đường kim, mỗi mũi chỉ, mỗi chi tiết đều được cân nhắc kỹ lưỡng để tạo ra những sản phẩm 
+            vượt qua mọi mùa vụ và xu hướng.
+          </p>
+          <a href="#" class="btn btn-primary">Tìm Hiểu Thêm</a>
+          <div class="brand-story__stats">
+            <div class="stat">
+              <div class="stat__number">12K+</div>
+              <div class="stat__label">Khách Hàng Hài Lòng</div>
+            </div>
+            <div class="stat">
+              <div class="stat__number">250+</div>
+              <div class="stat__label">Sản Phẩm Độc Đáo</div>
+            </div>
+            <div class="stat">
+              <div class="stat__number">15</div>
+              <div class="stat__label">Quốc Gia</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="testimonials" id="testimonials">
+    <div class="container">
+      <div class="testimonials__header reveal">
+        <span class="section-label">Mọi Người Nói Gì</span>
+        <h2 class="section-title">Đánh Giá Từ Khách Hàng</h2>
+        <p class="section-subtitle">
+          Những câu chuyện thực tế từ các khách hàng thân thiết trên toàn thế giới.
+        </p>
+      </div>
+
+      <div class="testimonials__grid">
+        <!-- Testimonial 1 -->
+        <div class="testimonial-card reveal">
+          <div class="testimonial-card__stars">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <p class="testimonial-card__text">
+            "Chất lượng của từng sản phẩm tôi mua từ MAISON đều rất xuất sắc. 
+            Chiếc áo khoác da hiện là món đồ yêu thích nhất của tôi — độ tinh xảo không thể sánh kịp."
+          </p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar">SN</div>
+            <div>
+              <div class="testimonial-card__name">Sarah Nguyen</div>
+              <div class="testimonial-card__role">Người Yêu Thời Trang</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 -->
+        <div class="testimonial-card reveal">
+          <div class="testimonial-card__stars">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <p class="testimonial-card__text">
+            "Cuối cùng thì cũng có một thương hiệu thấu hiểu sự sang trọng mà không hề khoa trương. 
+            Chiếc váy lụa rủ tuyệt đẹp và sự chú ý đến từng chi tiết thật đáng kinh ngạc."
+          </p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar">MT</div>
+            <div>
+              <div class="testimonial-card__name">Maria Torres</div>
+              <div class="testimonial-card__role">Giám Đốc Sáng Tạo</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 3 -->
+        <div class="testimonial-card reveal">
+          <div class="testimonial-card__stars">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <p class="testimonial-card__text">
+            "Tôi đã đặt mua chiếc túi Firenze và nó đến với lớp đóng gói tuyệt đẹp. 
+            Chất lượng da cực kỳ xuất sắc. MAISON đã trở thành lựa chọn hàng đầu của tôi cho phụ kiện cao cấp."
+          </p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar">JK</div>
+            <div>
+              <div class="testimonial-card__name">James Kim</div>
+              <div class="testimonial-card__role">Doanh Nhân</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NEWSLETTER ===== -->
+  <section class="newsletter" id="newsletter">
+    <div class="container">
+      <div class="newsletter__inner reveal">
+        <span class="section-label">Giữ Kết Nối</span>
+        <h2 class="section-title">Tham Gia Cùng MAISON</h2>
+        <p class="section-subtitle" style="margin: 0 auto;">
+          Hãy là người đầu tiên biết về các sản phẩm mới, ưu đãi độc quyền và cảm hứng phong cách được gửi thẳng đến hộp thư của bạn.
+        </p>
+        <form class="newsletter__form" onsubmit="event.preventDefault();">
+          <label for="newsletter-email" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;">Địa chỉ email</label>
+          <input type="email" id="newsletter-email" class="newsletter__input" placeholder="Nhập địa chỉ email của bạn" required>
+          <button type="submit" class="btn btn-dark">
+            Đăng Ký
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <div class="footer__brand-name">MAISON<span>.</span></div>
+          <p class="footer__brand-desc">
+            Thời trang cao cấp dành cho những ai trân trọng sự thanh lịch vượt thời gian và kỹ thuật chế tác đặc biệt.
+          </p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+              </svg>
+            </a>
+            <a href="#" aria-label="Twitter / X">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
+              </svg>
+            </a>
+            <a href="#" aria-label="Facebook">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+            </a>
+            <a href="#" aria-label="Pinterest">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="17" x2="12" y2="22"/><path d="M5.2 12a7.8 7.8 0 0 1 15.6 0c0 4.4-3.6 8-8 8"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer__column">
+          <h4 class="footer__column-title">Cửa Hàng</h4>
+          <ul>
+            <li><a href="#">Hàng Mới Về</a></li>
+            <li><a href="#">Bán Chạy Nhất</a></li>
+            <li><a href="#">Quần Áo</a></li>
+            <li><a href="#">Phụ Kiện</a></li>
+            <li><a href="#">Khuyến Mãi</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__column">
+          <h4 class="footer__column-title">Công Ty</h4>
+          <ul>
+            <li><a href="#">Về Chúng Tôi</a></li>
+            <li><a href="#">Tuyển Dụng</a></li>
+            <li><a href="#">Bền Vững</a></li>
+            <li><a href="#">Báo Chí</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__column">
+          <h4 class="footer__column-title">Hỗ Trợ</h4>
+          <ul>
+            <li><a href="#">Trung Tâm Trợ Giúp</a></li>
+            <li><a href="#">Giao Hàng</a></li>
+            <li><a href="#">Đổi Trả</a></li>
+            <li><a href="#">Hướng Dẫn Kích Cỡ</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <hr class="footer__divider">
+
+      <div class="footer__bottom">
+        <p>&copy; 2026 MAISON. Mọi quyền được bảo lưu.</p>
+        <div class="footer__bottom-links">
+          <a href="#">Chính Sách Bảo Mật</a>
+          <a href="#">Điều Khoản Dịch Vụ</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/api.js?v=8"></script>
+<script src="js/security.js"></script>
+  <script src="js/quick-buy.js?v=2"></script>
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Render Navigation Actions (Login / User Menu / Cart)
+      renderNavActions();
+
+      // 2. Load Featured Products (Newest 4 products)
+      const grid = document.getElementById('homeProductsGrid');
+      // Load flash sale banner
+      try {
+        const fsRes = await api.flashSales.getActive();
+        if (fsRes.success && fsRes.data?.length > 0) {
+          const fs = fsRes.data[0];
+          const endsAt = new Date(fs.endsAt).getTime();
+          const banner = document.createElement('div');
+          banner.id = 'flash-banner';
+          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:1100;background:linear-gradient(90deg,#DC2626,#F97316);color:#fff;text-align:center;padding:10px;font-weight:700;font-size:0.9rem;cursor:pointer;';
+          banner.onclick = () => window.location.href = `flash-sale.html?id=${fs.id}`;
+          banner.innerHTML = `🔥 FLASH SALE — ${fs.name} — Giảm ${fs.discountPercent}% | <span id="fs-countdown"></span>`;
+          document.body.prepend(banner);
+          // Push navbar down below banner
+          const bannerH = 42;
+          const navbar = document.getElementById('navbar');
+          navbar.style.top = `calc(var(--space-md) + ${bannerH}px)`;
+          // Countdown
+          const bannerTimer = setInterval(() => {
+            const diff = endsAt - Date.now();
+            if (diff <= 0) {
+              banner.remove();
+              document.getElementById('navbar').style.top = '';
+              clearInterval(bannerTimer);
+              return;
+            }
+            const h = Math.floor(diff/3600000);
+            const m = Math.floor((diff%3600000)/60000);
+            const s = Math.floor((diff%60000)/1000);
+            const el = document.getElementById('fs-countdown');
+            if (el) el.textContent = `Còn ${h}h ${m}m ${s}s`;
+          }, 1000);
+
+          // Populate Flash Sale section
+          document.getElementById('flash-sale-section').style.display = '';
+          document.getElementById('fs-section-title').textContent = `🔥 ${fs.name}`;
+          document.getElementById('fs-section-link').href = `flash-sale.html?id=${fs.id}`;
+          // Section countdown
+          setInterval(() => {
+            const diff = endsAt - Date.now();
+            if (diff <= 0) { document.getElementById('flash-sale-section').style.display = 'none'; return; }
+            const h = Math.floor(diff/3600000);
+            const m = Math.floor((diff%3600000)/60000);
+            const s = Math.floor((diff%60000)/1000);
+            const el = document.getElementById('fs-section-countdown');
+            if (el) el.textContent = `Kết thúc sau: ${h}h ${m}m ${s}s`;
+          }, 1000);
+          // Render products
+          if (fs.products?.length > 0) {
+            const fsGrid = document.getElementById('fs-section-grid');
+            fsGrid.innerHTML = fs.products.slice(0, 4).map(entry => {
+              const discPct = Math.round((1 - entry.flashPrice / entry.originalPrice) * 100);
+              const imgUrl = entry.primaryImageUrl || 'images/product-jacket.png';
+              return `
+                <div class="product-card reveal" onclick="window.location.href='product-detail.html?id=${entry.productId}'" style="cursor:pointer">
+                  <div class="product-card__image">
+                    <img src="${imgUrl}" alt="${entry.productName}" loading="lazy">
+                    <span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">-${discPct}%</span>
+                    <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${entry.productId})">Mua nhanh</button>
+                  </div>
+                  <div class="product-card__info">
+                    <h3 class="product-card__name">${entry.productName}</h3>
+                    <div class="product-card__price">
+                      <span class="current">${formatVND(entry.flashPrice)}</span>
+                      <span class="original">${formatVND(entry.originalPrice)}</span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+            setTimeout(() => {
+              fsGrid.querySelectorAll('.reveal').forEach((el, i) => {
+                setTimeout(() => el.classList.add('visible'), i * 100);
+              });
+            }, 100);
+          }
+        }
+      } catch {}
+
+      try {
+        // Fetch latest 4 active products
+        const res = await api.products.list({ page: 0, size: 4, sort: 'createdAt', dir: 'desc', status: 'ACTIVE' });
+        if (res.success && res.data) {
+          const products = res.data.content || [];
+          if (products.length > 0) {
+            grid.innerHTML = products.map(p => {
+              const displayPrice = p.flashPrice || p.salePrice || p.price;
+              const hasDiscount = displayPrice < p.price;
+              const imgUrl = p.primaryImageUrl || 'images/product-jacket.png';
+              const isNew = new Date() - new Date(p.createdAt) < 7 * 24 * 60 * 60 * 1000;
+              const isFlash = !!p.flashPrice;
+              return `
+                <div class="product-card reveal" onclick="window.location.href='product-detail.html?id=${p.id}'" style="cursor:pointer">
+                  <div class="product-card__image">
+                    <img src="${imgUrl}" alt="${p.name}" loading="lazy">
+                    ${isFlash ? '<span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">🔥 FLASH</span>' : (isNew ? '<span class="product-card__badge">Mới</span>' : '')}
+                    ${p.stock === 0 ? '<span class="product-card__badge" style="background:#DC2626">Hết hàng</span>' : ''}
+                    <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${p.id})">Mua nhanh</button>
+                  </div>
+                  <div class="product-card__info">
+                    <span class="product-card__category">${p.categoryName || (p.category && p.category.name) || ''}</span>
+                    <h3 class="product-card__name">${p.name}</h3>
+                    <div class="product-card__price">
+                      <span class="current" style="${isFlash ? 'color:#DC2626' : ''}">${formatVND(displayPrice)}</span>
+                      ${hasDiscount ? `<span class="original">${formatVND(p.price)}</span>` : ''}
+                    </div>
+                    ${isFlash && p.flashEndsAt ? `<div class="flash-countdown" data-ends-at="${p.flashEndsAt}" style="font-size:0.72rem;color:#DC2626;font-weight:600;margin-top:4px">⏱ ...</div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('');
+            startFlashCountdowns();
+
+            // Re-trigger scroll reveal for new dynamic elements
+            setTimeout(() => {
+              grid.querySelectorAll('.reveal').forEach((el, i) => {
+                setTimeout(() => el.classList.add('visible'), i * 100);
+              });
+            }, 100);
+          } else {
+             grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--color-text-muted)">Chưa có sản phẩm nào.</p>';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load products:', err);
+        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#DC2626">Không thể tải sản phẩm. Vui lòng thử lại sau.</p>';
+      }
+    });
+
+    // Handle Hamburger menu specifically for the homepage since we re-ordered DOM a bit
+    document.getElementById('hamburger').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    function startFlashCountdowns() {
+      document.querySelectorAll('.flash-countdown[data-ends-at]').forEach(el => {
+        const endsAt = new Date(el.dataset.endsAt).getTime();
+        function tick() {
+          const diff = endsAt - Date.now();
+          if (diff <= 0) { el.textContent = 'Đã kết thúc'; clearInterval(timer); return; }
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          el.textContent = `⏱ ${h > 0 ? h + 'g ' : ''}${String(m).padStart(2,'0')}p ${String(s).padStart(2,'0')}s`;
+        }
+        tick();
+        const timer = setInterval(tick, 1000);
+      });
+    }
+  </script>
+</body>
+</html>

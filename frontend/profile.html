@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài khoản - MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <span class="section-label">Cá nhân</span>
+    <h1>Tài khoản của tôi</h1>
+  </div>
+</div>
+
+<div class="container page-content">
+  <div class="user-page-layout">
+    <div class="user-sidebar">
+      <div class="user-sidebar__card">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">Đang tải...</div>
+        <div class="user-email" id="userEmail"></div>
+      </div>
+      <nav class="user-menu">
+        <a href="profile.html" class="active">Thông tin cá nhân</a>
+        <a href="orders.html">Đơn hàng của tôi</a>
+        <a href="#" onclick="handleLogout()">Đăng xuất</a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="content-card">
+        <h2 class="content-card__title">Thông tin cá nhân</h2>
+        <div id="alertBox"></div>
+        <form id="profileForm">
+          <div class="form-group">
+            <label class="form-label">Họ và tên</label>
+            <input class="form-input" type="text" id="name" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" id="email" disabled>
+          </div>
+          <p class="form-hint">Backend hiện tại chưa hỗ trợ chỉnh sửa profile user.</p>
+        </form>
+      </div>
+
+      <div class="content-card">
+        <h2 class="content-card__title">Thông tin tài khoản</h2>
+        <div id="accountInfo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  renderNavActions();
+  loadProfile();
+});
+
+async function loadProfile() {
+  try {
+    const res = await api.users.me();
+    if (res.success && res.data) {
+      const u = res.data;
+      Auth.save(null, null, u);
+      const initials = u.name ? u.name.split(' ').map(function (w) { return w[0]; }).join('').toUpperCase().slice(0, 2) : 'U';
+      document.getElementById('userAvatar').textContent = initials;
+      document.getElementById('userName').textContent = u.name || '';
+      document.getElementById('userEmail').textContent = u.email || '';
+      document.getElementById('name').value = u.name || '';
+      document.getElementById('email').value = u.email || '';
+      document.getElementById('accountInfo').innerHTML = `
+        <div class="summary-row" style="padding:8px 0;border-bottom:1px solid var(--color-border)"><span style="color:var(--color-text-muted)">Vai trò</span><span>${u.role === 'ROLE_ADMIN' || u.role === 'ADMIN' ? '<span class="badge badge-warning">Admin</span>' : '<span class="badge badge-success">Thành viên</span>'}</span></div>
+        <div class="summary-row" style="padding:8px 0;border-bottom:1px solid var(--color-border)"><span style="color:var(--color-text-muted)">Trạng thái</span><span>${getStatusBadge(u.status)}</span></div>
+        <div class="summary-row" style="padding:8px 0"><span style="color:var(--color-text-muted)">Ngày tạo</span><span>${formatDate(u.createdAt)}</span></div>
+      `;
+    }
+  } catch (e) {
+    document.getElementById('alertBox').innerHTML = '<div class="alert alert-error">Không thể tải profile</div>';
+  }
+}
+</script>
+</body>
+</html>

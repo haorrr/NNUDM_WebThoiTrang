@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng ký — MAISON</title>
+  <meta name="description" content="Tạo tài khoản MAISON để khám phá bộ sưu tập thời trang cao cấp.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-page__visual">
+    <div class="auth-page__visual-content">
+      <h2>Gia nhập cùng<br><span>MAISON.</span></h2>
+      <p>Tạo tài khoản và trở thành thành viên của cộng đồng thời trang cao cấp. Nhận ưu đãi độc quyền ngay hôm nay.</p>
+      <ul class="feature-list" style="margin-top:2rem">
+        <li>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Ưu đãi 10% cho đơn hàng đầu tiên
+        </li>
+        <li>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Theo dõi đơn hàng real-time
+        </li>
+        <li>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Nhận thông báo bộ sưu tập mới
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-page__form-area">
+    <div class="auth-form-box">
+      <a href="index.html" class="auth-logo">MAISON<span>.</span></a>
+      <h2 class="auth-title">Tạo tài khoản</h2>
+      <p class="auth-subtitle">Điền thông tin để bắt đầu mua sắm</p>
+
+      <div id="alertBox"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label class="form-label" for="name">Họ và tên</label>
+          <input class="form-input" type="text" id="name" placeholder="Nguyễn Văn A" required autocomplete="name" minlength="2">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input class="form-input" type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Mật khẩu</label>
+          <div class="input-group">
+            <input class="form-input" type="password" id="password" placeholder="Tối thiểu 6 ký tự" required minlength="6">
+            <button type="button" class="input-toggle" id="togglePw" aria-label="Hiện/ẩn mật khẩu">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="form-hint">Tối thiểu 6 ký tự</p>
+        </div>
+        <div class="form-group" id="refGroup">
+          <label class="form-label" for="referralCode">Mã giới thiệu <span style="color:var(--color-text-muted);font-weight:400">(tùy chọn)</span></label>
+          <input class="form-input" type="text" id="referralCode" placeholder="Nhập mã nếu được bạn bè giới thiệu" maxlength="20" style="text-transform:uppercase">
+          <p class="form-hint" id="refHint"></p>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%" id="submitBtn">
+          Tạo tài khoản
+        </button>
+      </form>
+
+      <p class="auth-footer-text">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+  if (Auth.isLoggedIn()) window.location.href = 'index.html';
+
+  // Auto-fill referral code from URL ?ref=CODE
+  const urlRef = new URLSearchParams(window.location.search).get('ref');
+  if (urlRef) {
+    const refInput = document.getElementById('referralCode');
+    refInput.value = urlRef.toUpperCase();
+    document.getElementById('refHint').textContent = '✓ Mã giới thiệu đã được điền tự động';
+    document.getElementById('refHint').style.color = '#16A34A';
+  }
+
+  const pwInput = document.getElementById('password');
+  document.getElementById('togglePw').addEventListener('click', () => {
+    pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
+  });
+
+  document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const alertBox = document.getElementById('alertBox');
+    alertBox.innerHTML = '';
+    setLoading(btn, true);
+
+    try {
+      const res = await api.auth.register(
+        document.getElementById('name').value.trim(),
+        document.getElementById('email').value.trim(),
+        document.getElementById('password').value,
+        document.getElementById('referralCode').value.trim().toUpperCase() || null
+      );
+      if (res.success) {
+        alertBox.innerHTML = `<div class="alert alert-success">Đăng ký thành công! Đang chuyển đến đăng nhập...</div>`;
+        setTimeout(() => window.location.href = 'login.html', 1500);
+      }
+    } catch (err) {
+      let msg = err.message || 'Đăng ký thất bại';
+      if (err.errors) {
+        msg = Object.values(err.errors).join('<br>');
+      }
+      alertBox.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+      setLoading(btn, false);
+    }
+  });
+</script>
+</body>
+</html>

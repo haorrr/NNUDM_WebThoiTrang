@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Duyệt đánh giá — Admin MAISON</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../shared.css">
+</head>
+<body class="admin-page">
+<aside class="admin-sidebar">
+  <div class="sidebar-logo">MAISON<span>.</span></div>
+  <div class="sidebar-user"><div class="sidebar-user__name" id="sidebarUserName">Admin</div><div class="sidebar-user__role">Administrator</div></div>
+  <nav class="sidebar-nav">
+<div class="sidebar-section-title">Quản lý</div>
+    <a href="products.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>Sản phẩm</a>
+    <a href="categories.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>Danh mục</a>
+    <a href="orders.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Đơn hàng</a>
+    <a href="flash-sales.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Flash Sale</a>
+    <a href="coupons.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Mã giảm giá</a>
+    <a href="users.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Người dùng</a>
+    <a href="reviews.html" class="active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Đánh giá</a>
+  </nav>
+  <div class="sidebar-footer"><button class="btn btn-outline btn-sm" style="width:100%;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2)" onclick="handleLogout()">Đăng xuất</button></div>
+</aside>
+
+<main class="admin-main">
+  <div class="admin-topbar"><h1>Duyệt đánh giá</h1></div>
+  <div class="admin-body">
+    <div class="admin-card">
+      <div class="filters-bar">
+        <select class="form-select" id="statusFilter" onchange="loadReviews()">
+          <option value="">Tất cả</option>
+          <option value="PENDING">Chờ duyệt</option>
+          <option value="APPROVED">Đã duyệt</option>
+          <option value="REJECTED">Từ chối</option>
+        </select>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr><th>Người dùng</th><th>Sản phẩm</th><th>Sao</th><th>Nhận xét</th><th>Ảnh</th><th>Ngày</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+          <tbody id="reviewsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn() || !Auth.isAdmin()) { window.location.href = '../login.html'; return; }
+  document.getElementById('sidebarUserName').textContent = Auth.getUser()?.name || 'Admin';
+  loadReviews();
+});
+
+async function loadReviews() {
+  const tbody = document.getElementById('reviewsTable');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem">Đang tải...</td></tr>`;
+  const params = { page: 0, size: 50 };
+  const status = document.getElementById('statusFilter').value;
+  if (status) params.status = status;
+
+  try {
+    const res = await api.reviews.adminList(params);
+    if (res.success && res.data) {
+      const reviews = res.data.content || [];
+      if (reviews.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Không có đánh giá nào</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = reviews.map(r => `
+        <tr>
+          <td style="font-size:0.875rem">${r.userName || '—'}</td>
+          <td style="font-size:0.82rem">${r.productName || `ID: ${r.productId}`}</td>
+          <td><div class="stars-row">${renderStars(r.rating)}</div></td>
+          <td style="font-size:0.82rem;max-width:200px">${r.comment || ''}</td>
+          <td>
+            ${r.imageUrls?.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap">${r.imageUrls.map(u=>`<img src="${u}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:zoom-in" onclick="window.open('${u}','_blank')">`).join('')}</div>` : '<span style="color:var(--color-text-muted)">—</span>'}
+          </td>
+          <td style="font-size:0.78rem;color:var(--color-text-muted)">${formatDate(r.createdAt)}</td>
+          <td>${getStatusBadge(r.status || 'PENDING')}</td>
+          <td>
+            <div class="actions">
+              ${r.status !== 'APPROVED' ? `<button class="btn btn-xs btn-success" onclick="moderate(${r.id}, 'APPROVED')">Duyệt</button>` : ''}
+              ${r.status !== 'REJECTED' ? `<button class="btn btn-xs btn-danger" onclick="moderate(${r.id}, 'REJECTED')">Từ chối</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#DC2626;padding:1rem">Lỗi tải dữ liệu</td></tr>`; }
+}
+
+async function moderate(id, status) {
+  try {
+    await api.reviews.adminModerate(id, status);
+    showToast(status === 'APPROVED' ? 'Đã duyệt đánh giá' : 'Đã từ chối đánh giá');
+    loadReviews();
+  } catch (err) { showToast(err.message || 'Không thể cập nhật', 'error'); }
+}
+</script>
+</body>
+</html>

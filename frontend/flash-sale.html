@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flash Sale — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="page-header" style="background:linear-gradient(135deg,#7F1D1D,#DC2626,#F97316)">
+  <div class="container">
+    <span class="section-label" style="color:rgba(255,255,255,0.8)">Ưu đãi có hạn</span>
+    <h1 id="fs-title">🔥 Flash Sale</h1>
+    <p id="fs-countdown" style="font-size:1.3rem;font-weight:700;color:#FEF08A">Đang tải...</p>
+  </div>
+</div>
+
+<div class="container" style="padding-top:2.5rem;padding-bottom:4rem">
+  <div id="fsGrid" class="products-grid-4">
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
+</footer>
+
+<script src="js/api.js?v=8"></script>
+<script src="js/security.js"></script>
+<script src="js/quick-buy.js?v=2"></script>
+<script>
+let countdownInterval;
+
+async function loadFlashSale() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const grid = document.getElementById('fsGrid');
+
+  try {
+    let fs;
+    if (id) {
+      const res = await api.flashSales.getById(id);
+      fs = res.data;
+    } else {
+      const res = await api.flashSales.getActive();
+      if (!res.data?.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h3>Không có flash sale đang diễn ra</h3><a href="products.html" class="btn btn-primary btn-sm" style="margin-top:12px">Xem tất cả sản phẩm</a></div>';
+        return;
+      }
+      fs = res.data[0];
+    }
+
+    document.getElementById('fs-title').textContent = '🔥 ' + fs.name;
+    document.title = fs.name + ' — MAISON';
+
+    // Countdown
+    const endsAt = new Date(fs.endsAt).getTime();
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      const diff = endsAt - Date.now();
+      const el = document.getElementById('fs-countdown');
+      if (diff <= 0) { el.textContent = 'Đã kết thúc'; clearInterval(countdownInterval); return; }
+      const h = Math.floor(diff/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      el.textContent = `⏱ Kết thúc sau: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+
+    if (!fs.products?.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h3>Chưa có sản phẩm</h3></div>';
+      return;
+    }
+
+    grid.innerHTML = fs.products.map(entry => {
+      const img = entry.primaryImageUrl || 'images/product-jacket.png';
+      const pct = Math.round((1 - entry.flashPrice / entry.originalPrice) * 100);
+      const sold = entry.stockLimit ? Math.round((entry.soldCount / entry.stockLimit) * 100) : 0;
+      return `
+        <div class="product-card reveal">
+          <div class="product-card__image" onclick="window.location.href='product-detail.html?id=${entry.productId}'" style="cursor:pointer">
+            <img src="${img}" alt="${entry.productName}" loading="lazy">
+            <span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">-${pct}%</span>
+            <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${entry.productId})">Mua nhanh</button>
+          </div>
+          <div class="product-card__info">
+            <h3 class="product-card__name">${entry.productName}</h3>
+            <div class="product-card__price">
+              <span class="current" style="color:#DC2626">${formatVND(entry.flashPrice)}</span>
+              <span class="original">${formatVND(entry.originalPrice)}</span>
+            </div>
+            ${entry.stockLimit ? `
+            <div style="margin-top:8px">
+              <div style="height:6px;background:var(--color-border);border-radius:3px;overflow:hidden">
+                <div style="width:${sold}%;height:100%;background:linear-gradient(90deg,#DC2626,#F97316);transition:width 0.5s"></div>
+              </div>
+              <div style="font-size:0.72rem;color:var(--color-text-muted);margin-top:4px">Đã bán ${entry.soldCount}/${entry.stockLimit}</div>
+            </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    grid.querySelectorAll('.reveal').forEach((el, i) => setTimeout(() => el.classList.add('visible'), i * 60));
+  } catch {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#DC2626">Không thể tải flash sale</div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNavActions();
+  loadFlashSale();
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('hamburger').classList.toggle('active');
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

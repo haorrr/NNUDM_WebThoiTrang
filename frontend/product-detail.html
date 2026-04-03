@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết sản phẩm — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<!-- Breadcrumb -->
+<div style="padding-top:90px;padding-bottom:0;background:var(--color-background)">
+  <div class="container" style="padding-top:1rem;padding-bottom:0">
+    <nav style="font-size:0.82rem;color:var(--color-text-muted)">
+      <a href="index.html" style="color:var(--color-text-muted)">Trang chủ</a>
+      <span style="margin:0 8px">/</span>
+      <a href="products.html" style="color:var(--color-text-muted)">Sản phẩm</a>
+      <span style="margin:0 8px">/</span>
+      <span id="breadcrumbName" style="color:var(--color-primary)">Đang tải...</span>
+    </nav>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Product Detail -->
+  <div class="product-detail-grid" id="productContent">
+    <!-- Skeleton -->
+    <div>
+      <div class="skeleton" style="aspect-ratio:3/4;border-radius:12px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <div class="skeleton" style="width:72px;height:88px;border-radius:8px"></div>
+        <div class="skeleton" style="width:72px;height:88px;border-radius:8px"></div>
+      </div>
+    </div>
+    <div>
+      <div class="skeleton" style="height:40px;margin-bottom:16px;border-radius:8px"></div>
+      <div class="skeleton" style="height:32px;width:60%;margin-bottom:16px;border-radius:8px"></div>
+      <div class="skeleton" style="height:20px;margin-bottom:8px;border-radius:8px"></div>
+      <div class="skeleton" style="height:20px;width:80%;margin-bottom:8px;border-radius:8px"></div>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <div style="padding-bottom:4rem" id="reviews">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+      <h2 style="font-size:1.5rem;font-weight:800;margin:0">Đánh giá sản phẩm</h2>
+      <div id="writeReviewBtn" style="display:none">
+        <button class="btn btn-dark btn-sm" onclick="document.getElementById('reviewForm').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('reviewForm').style.boxShadow='0 0 0 3px var(--color-cta)';setTimeout(()=>document.getElementById('reviewForm').style.boxShadow='',2000)">
+          Viết đánh giá
+        </button>
+      </div>
+    </div>
+    <div id="ratingSummary"></div>
+    <div id="reviewsList"></div>
+    <div id="reviewForm" style="display:none"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom">
+      <p>&copy; 2026 MAISON. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js?v=8"></script>
+<script src="js/security.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const productId = params.get('id');
+
+let selectedSize = '';
+let selectedColor = '';
+let selectedVariantId = null;
+let currentImageIndex = 0;
+let product = null;
+
+function getImageUrl(images) {
+  if (!images || images.length === 0) return 'images/product-jacket.png';
+  const primary = images.find(i => i.primary) || images[0];
+  return primary.imageUrl || 'images/product-jacket.png';
+}
+
+function renderProduct(p) {
+  product = p;
+  document.title = `${p.name} — MAISON`;
+  document.getElementById('breadcrumbName').textContent = p.name;
+
+  const images = p.images || [];
+  const variants = p.variants || [];
+  const displayPrice = p.flashPrice || p.salePrice || p.price;
+  const origPrice = p.price;
+  const hasDiscount = displayPrice < origPrice;
+  const variantStockTotal = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  const baseStock = Number(p.stock) || 0;
+  const displayStock = variantStockTotal > 0 ? variantStockTotal : baseStock;
+  const inStock = displayStock > 0;
+
+  // Only show variant selectors when product actually has variants
+  const hasSizeVariants = variants.some(v => v.size);
+  const hasColorVariants = variants.some(v => v.color);
+  const uniqueSizes = hasSizeVariants ? [...new Set(variants.filter(v => v.size).map(v => v.size))] : [];
+  const uniqueColors = hasColorVariants
+    ? [...new Set(variants.filter(v => v.color && v.colorCode).map(v => JSON.stringify({color:v.color,code:v.colorCode})))].map(s => JSON.parse(s))
+    : [];
+
+  const thumbsHtml = images.length > 1 ? images.map((img, i) =>
+    `<div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="changeImage(${i})" data-idx="${i}">
+      <img src="${img.imageUrl}" alt="${p.name} ${i+1}">
+    </div>`
+  ).join('') : '';
+
+  document.getElementById('productContent').innerHTML = `
+    <!-- Gallery -->
+    <div style="position:sticky;top:100px">
+      <div class="gallery-main">
+        <img id="mainImage" src="${getImageUrl(images)}" alt="${p.name}">
+      </div>
+      ${images.length > 1 ? `<div class="gallery-thumbs">${thumbsHtml}</div>` : ''}
+    </div>
+
+    <!-- Info -->
+    <div>
+      <span class="section-label">${p.category?.name || ''}</span>
+      <h1 class="product-title">${p.name}</h1>
+      ${p.flashPrice ? `<div style="margin-bottom:6px;display:flex;align-items:center;gap:10px">
+        <span class="product-card__flash">🔥 FLASH SALE</span>
+        ${p.flashEndsAt ? `<span id="flashCountdown" data-ends-at="${p.flashEndsAt}" style="font-size:0.85rem;font-weight:700;color:#DC2626;background:#FEF2F2;padding:3px 10px;border-radius:20px">⏱ ...</span>` : ''}
+      </div>` : ''}
+      <div class="product-price-row">
+        <span class="product-price" style="${p.flashPrice ? 'color:#DC2626' : ''}">${formatVND(displayPrice)}</span>
+        ${hasDiscount ? `<span class="product-price-original">${formatVND(origPrice)}</span>` : ''}
+      </div>
+      <p class="product-stock" id="stockInfo">
+        ${inStock
+          ? `<span class="in-stock">✓ Còn hàng (${displayStock} sản phẩm)</span>`
+          : `<span class="out-stock">✗ Hết hàng</span>`}
+      </p>
+
+      ${p.description ? `<p style="color:var(--color-text-muted);margin-bottom:1.5rem;line-height:1.7;font-size:0.95rem">${p.description}</p>` : ''}
+
+      <!-- Size Selection (only if product has size variants) -->
+      ${uniqueSizes.length > 0 ? `
+      <div style="margin-bottom:1.5rem">
+        <p class="option-label">Kích thước</p>
+        <div class="size-options">
+          ${uniqueSizes.map(s => {
+            const variantStock = variants.filter(v => v.size === s).reduce((sum,v) => sum + v.stock, 0);
+            return `<button class="size-btn ${variantStock === 0 ? 'disabled' : ''}" onclick="selectSize('${s}',this)" ${variantStock === 0 ? 'disabled' : ''}>${s}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Color Selection (only if product has color variants) -->
+      ${uniqueColors.length > 0 ? `
+      <div style="margin-bottom:2rem">
+        <p class="option-label">Màu sắc</p>
+        <div class="color-options">
+          ${uniqueColors.map(({color,code}) =>
+            `<div class="color-dot" style="background:${code};border-color:${code === '#FFFFFF' ? '#E7E5E4' : code}" title="${color}" onclick="selectColor('${color}',this)"></div>`
+          ).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Actions -->
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary" style="flex:1" id="addToCartBtn" onclick="addToCart()" ${!inStock ? 'disabled' : ''}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          ${inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+        </button>
+        <button class="btn btn-outline" id="wishBtn" onclick="toggleWish()" title="Yêu thích">
+          <svg id="wishIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <a href="cart.html" class="btn btn-outline">Giỏ hàng</a>
+      </div>
+
+      ${p.aiDescription ? `
+        <div style="background:var(--color-gold-light);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.5rem">
+          <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--color-cta);margin-bottom:6px">✦ Mô tả AI</p>
+          <p style="font-size:0.9rem;color:var(--color-secondary);line-height:1.7">${p.aiDescription}</p>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function changeImage(idx) {
+  const product_obj = product;
+  if (!product_obj.images || !product_obj.images[idx]) return;
+  document.getElementById('mainImage').src = product_obj.images[idx].imageUrl;
+  document.querySelectorAll('.gallery-thumb').forEach((el, i) => el.classList.toggle('active', i === idx));
+}
+
+function selectSize(size, btn) {
+  selectedSize = size;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateVariantSelection();
+}
+
+function selectColor(color, btn) {
+  selectedColor = color;
+  document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateVariantSelection();
+}
+
+function updateVariantSelection() {
+  if (!product?.variants?.length) return;
+  const v = product.variants.find(vv =>
+    (!selectedSize || vv.size === selectedSize) &&
+    (!selectedColor || vv.color === selectedColor)
+  );
+  selectedVariantId = v?.id || null;
+  const stock = v ? v.stock : product.stock;
+  const stockEl = document.getElementById('stockInfo');
+  if (stockEl) {
+    stockEl.innerHTML = stock > 0
+      ? `<span class="in-stock">✓ Còn hàng (${stock} sản phẩm)</span>`
+      : `<span class="out-stock">✗ Hết hàng</span>`;
+  }
+  const addBtn = document.getElementById('addToCartBtn');
+  if (addBtn) addBtn.disabled = stock === 0;
+}
+
+async function toggleWish() {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  try {
+    const res = await api.wishlist.toggle(productId);
+    const wishlisted = res.data?.wishlisted;
+    const icon = document.getElementById('wishIcon');
+    if (icon) { icon.style.fill = wishlisted ? '#EF4444' : 'none'; icon.style.stroke = wishlisted ? '#EF4444' : 'currentColor'; }
+    showToast(wishlisted ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích');
+  } catch {}
+}
+
+async function checkWishlistStatus() {
+  if (!Auth.isLoggedIn() || !productId) return;
+  try {
+    const res = await api.wishlist.check(productId);
+    if (res.data?.wishlisted) {
+      const icon = document.getElementById('wishIcon');
+      if (icon) { icon.style.fill = '#EF4444'; icon.style.stroke = '#EF4444'; }
+    }
+  } catch {}
+}
+
+async function addToCart() {
+  if (!Auth.isLoggedIn()) {
+    showToast('Vui lòng đăng nhập để thêm vào giỏ', 'error');
+    setTimeout(() => window.location.href = 'login.html', 1200);
+    return;
+  }
+  const uniqueSizes = [...new Set((product?.variants || []).map(v => v.size).filter(Boolean))];
+  const uniqueColors = [...new Set((product?.variants || []).map(v => v.color).filter(Boolean))];
+  if (uniqueSizes.length > 0 && !selectedSize) {
+    showToast('Vui lòng chọn kích thước', 'error'); return;
+  }
+  if (uniqueColors.length > 0 && !selectedColor) {
+    showToast('Vui lòng chọn màu sắc', 'error'); return;
+  }
+  const btn = document.getElementById('addToCartBtn');
+  setLoading(btn, true);
+  try {
+    const res = await api.cart.addItem(productId, 1, selectedSize, selectedColor, selectedVariantId);
+    if (res.success) {
+      showToast('Đã thêm vào giỏ hàng!');
+      updateCartCount();
+    }
+  } catch (err) {
+    showToast(err.message || 'Không thể thêm vào giỏ', 'error');
+  }
+  setLoading(btn, false);
+}
+
+let selectedRating = 0;
+let reviewFiles = [];
+
+async function loadReviews() {
+  const container = document.getElementById('reviewsList');
+  const formEl = document.getElementById('reviewForm');
+  if (!formEl) return;
+
+  try {
+    const res = await api.reviews.getByProduct(productId);
+    const reviews = res.data?.content || [];
+    const total = res.data?.totalElements || 0;
+
+    // Rating summary
+    if (reviews.length > 0) {
+      const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+      const counts = [5,4,3,2,1].map(n => ({ n, c: reviews.filter(r => r.rating === n).length }));
+      document.getElementById('ratingSummary').innerHTML = `
+        <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;margin-bottom:1.5rem;padding:1.25rem;background:#FFFBEB;border-radius:12px;border:1px solid #FDE68A">
+          <div style="text-align:center">
+            <div style="font-size:3rem;font-weight:800;font-family:var(--font-heading);color:var(--color-cta);line-height:1">${avg}</div>
+            <div style="margin:4px 0">${renderStars(Math.round(avg))}</div>
+            <div style="font-size:0.8rem;color:var(--color-text-muted)">${total} đánh giá</div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            ${counts.map(({n,c}) => `
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-size:0.8rem;width:20px;text-align:right">${n}★</span>
+                <div style="flex:1;height:6px;background:var(--color-border);border-radius:3px;overflow:hidden">
+                  <div style="height:100%;background:var(--color-cta);width:${total > 0 ? Math.round(c/total*100) : 0}%;transition:width .4s"></div>
+                </div>
+                <span style="font-size:0.78rem;color:var(--color-text-muted);width:20px">${c}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    if (reviews.length > 0) {
+      container.innerHTML = reviews.map(r => `
+        <div style="border:1px solid var(--color-border);border-radius:12px;padding:1.25rem;margin-bottom:1rem;background:#fff">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--color-gold-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:var(--color-cta);font-family:var(--font-heading);flex-shrink:0">
+              ${(r.userName || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:0.9rem">${r.userName || 'Ẩn danh'}</div>
+              <div class="stars-row">${renderStars(r.rating)}</div>
+            </div>
+            <span style="margin-left:auto;font-size:0.78rem;color:var(--color-text-muted);white-space:nowrap">${formatDate(r.createdAt)}</span>
+          </div>
+          ${r.comment ? `<p style="color:var(--color-secondary);font-size:0.9rem;line-height:1.6;margin-bottom:${r.imageUrls?.length ? '10px' : '0'}">${r.comment}</p>` : ''}
+          ${r.imageUrls?.length ? `
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              ${r.imageUrls.map(u => `<img src="${u}" onclick="openReviewImg('${u}')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--color-border)">`).join('')}
+            </div>` : ''}
+        </div>`).join('');
+    } else {
+      container.innerHTML = `<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><h3>Chưa có đánh giá nào</h3><p>Hãy là người đầu tiên đánh giá sản phẩm này</p></div>`;
+    }
+  } catch {}
+
+  // Check canReview
+  if (!Auth.isLoggedIn()) { formEl.style.display = 'none'; return; }
+  let canReview = false;
+  try {
+    const canRes = await api.reviews.canReview(productId);
+    canReview = canRes.success && canRes.data === true;
+  } catch { /* endpoint may not exist yet */ }
+  const writeBtn = document.getElementById('writeReviewBtn');
+  if (canReview) {
+      if (writeBtn) writeBtn.style.display = 'block';
+      formEl.innerHTML = `
+        <div class="content-card" style="margin-top:1.5rem">
+          <h3 class="content-card__title">Viết đánh giá</h3>
+          <div style="margin-bottom:1.25rem">
+            <p class="form-label" style="margin-bottom:8px">Chất lượng sản phẩm</p>
+            <div style="display:flex;gap:6px" id="ratingInput">
+              ${[1,2,3,4,5].map(i => `
+                <svg class="star" data-val="${i}" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2"
+                  style="cursor:pointer;width:36px;height:36px;transition:transform .15s"
+                  onmouseover="hoverRating(${i})" onmouseout="resetHover()" onclick="setRating(${i})">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>`).join('')}
+            </div>
+            <p id="ratingLabel" style="font-size:0.82rem;color:var(--color-text-muted);margin-top:6px;min-height:18px"></p>
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-label">Nhận xét của bạn</label>
+            <textarea class="form-textarea" id="reviewComment" placeholder="Chia sẻ trải nghiệm sử dụng sản phẩm..." rows="4" style="resize:vertical"></textarea>
+          </div>
+          <div style="margin-bottom:1.25rem">
+            <label class="form-label" style="margin-bottom:8px;display:block">Thêm ảnh (tùy chọn, tối đa 4 ảnh)</label>
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 16px;border:2px dashed var(--color-border);border-radius:10px;font-size:0.875rem;color:var(--color-text-muted);transition:border-color .2s;user-select:none" onmouseover="this.style.borderColor='var(--color-cta)'" onmouseout="this.style.borderColor='var(--color-border)'">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Chọn ảnh
+              <input type="file" accept="image/*" multiple style="display:none" id="reviewImgInput" onchange="handleReviewImages(this)">
+            </label>
+            <div id="reviewImgPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+          </div>
+          <button class="btn btn-dark" onclick="submitReview()" id="reviewSubmitBtn" style="min-width:160px">Gửi đánh giá</button>
+        </div>`;
+      formEl.style.display = 'block';
+    } else {
+      if (writeBtn) writeBtn.style.display = 'none';
+      formEl.style.display = 'none';
+    }
+}
+
+const RATING_LABELS = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Xuất sắc'];
+
+function hoverRating(val) {
+  document.querySelectorAll('#ratingInput .star').forEach((s, i) => {
+    s.style.fill = i < val ? '#D97706' : 'none';
+    s.style.transform = i < val ? 'scale(1.15)' : 'scale(1)';
+  });
+  const lbl = document.getElementById('ratingLabel');
+  if (lbl) lbl.textContent = RATING_LABELS[val];
+}
+
+function resetHover() {
+  document.querySelectorAll('#ratingInput .star').forEach((s, i) => {
+    s.style.fill = i < selectedRating ? '#D97706' : 'none';
+    s.style.transform = 'scale(1)';
+  });
+  const lbl = document.getElementById('ratingLabel');
+  if (lbl) lbl.textContent = selectedRating ? RATING_LABELS[selectedRating] : '';
+}
+
+function setRating(val) {
+  selectedRating = val;
+  resetHover();
+}
+
+async function handleReviewImages(input) {
+  const files = Array.from(input.files).slice(0, 4 - reviewFiles.length);
+  const preview = document.getElementById('reviewImgPreview');
+  for (const file of files) {
+    if (reviewFiles.length >= 4) break;
+    const idx = reviewFiles.length;
+    reviewFiles.push(file);
+    const localUrl = URL.createObjectURL(file);
+    const thumb = document.createElement('div');
+    thumb.style.cssText = 'position:relative;width:80px;height:80px';
+    thumb.innerHTML = `<img src="${localUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--color-border)">
+      <button onclick="removeReviewImg(${idx},this.parentElement)" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#DC2626;color:#fff;border:none;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>`;
+    preview.appendChild(thumb);
+  }
+  input.value = '';
+}
+
+function removeReviewImg(idx, el) {
+  reviewFiles.splice(idx, 1);
+  el.remove();
+  // Re-index remove buttons
+  document.querySelectorAll('#reviewImgPreview > div').forEach((d, i) => {
+    const btn = d.querySelector('button');
+    if (btn) btn.setAttribute('onclick', `removeReviewImg(${i},this.parentElement)`);
+  });
+}
+
+function openReviewImg(url) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  ov.onclick = () => ov.remove();
+  ov.innerHTML = `<img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain">`;
+  document.body.appendChild(ov);
+}
+
+async function submitReview() {
+  if (!selectedRating) { showToast('Vui lòng chọn số sao', 'error'); return; }
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (!comment) { showToast('Vui lòng nhập nhận xét', 'error'); return; }
+  const btn = document.getElementById('reviewSubmitBtn');
+  setLoading(btn, true);
+  try {
+    const res = await api.reviews.create({ productId: parseInt(productId), rating: selectedRating, comment });
+    if (res.success) {
+      if (reviewFiles.length > 0 && res.data && res.data.id) {
+        await api.reviews.uploadImagesByReviewId(res.data.id, reviewFiles);
+      }
+      showToast('Đánh giá đã được gửi và đang chờ duyệt!');
+      document.getElementById('reviewForm').style.display = 'none';
+      const wb = document.getElementById('writeReviewBtn');
+      if (wb) wb.style.display = 'none';
+      reviewFiles = [];
+      loadReviews();
+    } else {
+      showToast(res.message || 'Không thể gửi đánh giá', 'error');
+      setLoading(btn, false);
+    }
+  } catch (err) {
+    showToast(err.message || 'Không thể gửi đánh giá', 'error');
+    setLoading(btn, false);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  renderNavActions();
+  if (!productId) { window.location.href = 'products.html'; return; }
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+
+  try {
+    const res = await api.products.get(productId);
+    if (res.success && res.data) {
+      renderProduct(res.data);
+      startFlashCountdown();
+      await loadReviews();
+      checkWishlistStatus();
+      // Auto-scroll to review form if coming from order-detail
+      const openReview = sessionStorage.getItem('openReview');
+      if (openReview === String(productId)) {
+        sessionStorage.removeItem('openReview');
+        setTimeout(() => {
+          const form = document.getElementById('reviewForm');
+          if (form && form.style.display !== 'none') {
+            const top = form.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top, behavior: 'smooth' });
+            form.style.transition = 'box-shadow 0.3s';
+            form.style.boxShadow = '0 0 0 3px var(--color-cta), 0 8px 24px rgba(0,0,0,0.12)';
+            form.style.borderRadius = '12px';
+            setTimeout(() => { form.style.boxShadow = ''; }, 2500);
+          } else {
+            showToast('Đánh giá sản phẩm có ở cuối trang', 'info');
+          }
+        }, 400);
+      }
+    }
+  } catch {
+    document.getElementById('productContent').innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>Không tìm thấy sản phẩm</h3><p><a href="products.html">Quay lại</a></p></div>`;
+  }
+});
+
+function startFlashCountdown() {
+  const el = document.getElementById('flashCountdown');
+  if (!el) return;
+  const endsAt = new Date(el.dataset.endsAt).getTime();
+  function tick() {
+    const diff = endsAt - Date.now();
+    if (diff <= 0) { el.textContent = 'Đã kết thúc'; clearInterval(timer); return; }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    el.textContent = `⏱ ${h > 0 ? h + 'g ' : ''}${String(m).padStart(2,'0')}p ${String(s).padStart(2,'0')}s`;
+  }
+  tick();
+  const timer = setInterval(tick, 1000);
+}
+</script>
+</body>
+</html>

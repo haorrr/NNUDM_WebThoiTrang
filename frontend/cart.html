@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giỏ hàng - MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <span class="section-label">Mua sắm</span>
+    <h1>Giỏ hàng của bạn</h1>
+  </div>
+</div>
+
+<div class="container page-content">
+  <div id="cartView">
+    <div class="skeleton" style="height:200px;border-radius:12px"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h3>Xác nhận đặt hàng</h3>
+      <button class="modal__close" onclick="closeCheckout()">x</button>
+    </div>
+    <div id="checkoutAlertBox"></div>
+    <form id="checkoutForm">
+      <div class="form-group">
+        <label class="form-label">Thông tin người nhận</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <input class="form-input" id="shippingName" placeholder="Họ tên người nhận" required>
+          <input class="form-input" id="shippingPhone" placeholder="Số điện thoại" required>
+        </div>
+        <label class="form-label">Địa chỉ giao hàng</label>
+        <textarea class="form-textarea" id="shippingAddress" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phương thức thanh toán</label>
+        <select class="form-select" id="paymentMethod">
+          <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+          <option value="BANK_TRANSFER">Chuyển khoản ngân hàng</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ghi chú</label>
+        <input class="form-input" id="orderNotes" placeholder="Ghi chú cho đơn hàng...">
+      </div>
+      <div style="background:var(--color-background);border-radius:var(--radius-md);padding:1rem;margin-bottom:1rem">
+        <div id="modalOrderSummary"></div>
+      </div>
+    </form>
+    <div class="modal__footer">
+      <button class="btn btn-outline" onclick="closeCheckout()">Hủy</button>
+      <button class="btn btn-primary" id="placeOrderBtn" onclick="placeOrder()">Đặt hàng</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+let cartData = null;
+let appliedCoupon = null;
+let discountAmount = 0;
+
+document.addEventListener('DOMContentLoaded', function () {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  renderNavActions();
+  loadCart();
+});
+
+async function loadCart() {
+  const view = document.getElementById('cartView');
+  try {
+    const res = await api.cart.get();
+    if (res.success && res.data) {
+      cartData = res.data;
+      renderCart();
+    }
+  } catch (err) {
+    view.innerHTML = '<div class="alert alert-error">Không thể tải giỏ hàng</div>';
+  }
+}
+
+function renderCart() {
+  const view = document.getElementById('cartView');
+  if (!cartData || !cartData.items || cartData.items.length === 0) {
+    view.innerHTML = '<div class="empty-state" style="padding:4rem;text-align:center"><h3>Giỏ hàng trống</h3><p>Bạn chưa có sản phẩm nào trong giỏ</p><a href="products.html" class="btn btn-primary">Mua sắm ngay</a></div>';
+    return;
+  }
+
+  const subtotal = cartData.subtotal || 0;
+  const finalAmount = Math.max(0, subtotal - discountAmount);
+
+  view.innerHTML = `
+    <div class="cart-page-layout">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h2 style="font-size:1.1rem;font-weight:700">${cartData.totalItems} sản phẩm</h2>
+          <button class="btn btn-xs btn-danger" onclick="clearCart()">Xóa tất cả</button>
+        </div>
+
+        <div class="cart-items-section">
+          ${cartData.items.map(item => `
+            <div class="cart-item" id="cart-item-${item.id}">
+              <img class="cart-item__img" src="${item.imageUrl || 'images/product-jacket.png'}" alt="${item.productName}">
+              <div class="cart-item__info">
+                <div class="cart-item__name">${item.productName}</div>
+                <div class="cart-item__meta">${[item.size && `Size: ${item.size}`, item.color && `Màu: ${item.color}`].filter(Boolean).join(' · ')}</div>
+                <div class="cart-item__price">${formatVND(item.salePrice || item.price)}</div>
+                <div class="cart-item__actions" style="margin-top:10px">
+                  <div class="qty-ctrl">
+                    <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+                    <input class="qty-num" type="number" min="1" max="99" value="${item.quantity}" style="width:48px;text-align:center;border:1px solid var(--color-border);border-radius:4px;padding:2px 4px;font-size:0.9rem" onchange="updateQty(${item.id}, Math.max(1, Math.min(99, parseInt(this.value)||1)))">
+                    <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity + 1})">+</button>
+                  </div>
+                  <button class="cart-remove-btn" onclick="removeItem(${item.id})">Xóa</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="cart-summary">
+        <h3>Tóm tắt đơn hàng</h3>
+        <div class="coupon-input-row">
+          <input class="form-input" id="couponCode" placeholder="Mã giảm giá" value="${appliedCoupon ? appliedCoupon.code : ''}">
+          <button class="btn btn-dark btn-sm" id="couponBtn" onclick="applyCoupon()">Áp dụng</button>
+        </div>
+        <div id="couponResult"></div>
+
+        <div class="summary-row"><span>Tạm tính</span><span>${formatVND(subtotal)}</span></div>
+        ${discountAmount > 0 ? `<div class="summary-row discount"><span>Giảm giá (${appliedCoupon?.code})</span><span>-${formatVND(discountAmount)}</span></div>` : ''}
+        <div class="summary-row"><span>Phí vận chuyển</span><span style="color:#16A34A;font-weight:600">Miễn phí</span></div>
+        <div class="summary-row total"><span>Tổng cộng</span><span style="color:var(--color-cta)" id="cartTotal">${formatVND(finalAmount)}</span></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="openCheckout()">Đặt hàng ngay</button>
+        <a href="products.html" class="btn btn-outline" style="width:100%;margin-top:0.5rem;text-align:center;display:flex;justify-content:center">Tiếp tục mua sắm</a>
+      </div>
+    </div>
+  `;
+}
+
+async function updateQty(itemId, newQty) {
+  if (newQty < 1) return;
+  try {
+    await api.cart.updateItem(itemId, newQty);
+    await loadCart();
+  } catch (err) { showToast(err.message || 'Lỗi cập nhật', 'error'); }
+}
+
+async function removeItem(itemId) {
+  try {
+    await api.cart.removeItem(itemId);
+    showToast('Đã xóa khỏi giỏ hàng');
+    await loadCart();
+    updateCartCount();
+  } catch (err) { showToast(err.message || 'Không thể xóa', 'error'); }
+}
+
+async function clearCart() {
+  if (!confirm('Xóa toàn bộ giỏ hàng?')) return;
+  try {
+    await api.cart.clear();
+    cartData = null;
+    renderCart();
+    updateCartCount();
+  } catch (err) { showToast(err.message || 'Không thể xóa', 'error'); }
+}
+
+async function applyCoupon() {
+  const code = document.getElementById('couponCode').value.trim();
+  if (!code) return;
+  const btn = document.getElementById('couponBtn');
+  setLoading(btn, true);
+  const resultEl = document.getElementById('couponResult');
+  try {
+    const subtotal = cartData?.subtotal || 0;
+    const res = await api.coupons.validate(code, subtotal);
+    if (res.success && res.data) {
+      appliedCoupon = { code: code };
+      discountAmount = res.data.discountAmount || 0;
+      resultEl.innerHTML = `<div class="alert alert-success" style="margin-bottom:0.5rem">Áp dụng mã thành công, giảm ${formatVND(discountAmount)}</div>`;
+      renderCart();
+    }
+  } catch (err) {
+    resultEl.innerHTML = `<div class="alert alert-error" style="margin-bottom:0.5rem">${err.message || 'Mã không hợp lệ'}</div>`;
+  }
+  setLoading(btn, false);
+}
+
+function openCheckout() {
+  const subtotal = cartData?.subtotal || 0;
+  const final = Math.max(0, subtotal - discountAmount);
+  document.getElementById('modalOrderSummary').innerHTML = `
+    <div class="summary-row"><span>Tổng sản phẩm</span><span>${cartData.totalItems} món</span></div>
+    <div class="summary-row"><span>Tạm tính</span><span>${formatVND(subtotal)}</span></div>
+    ${discountAmount > 0 ? `<div class="summary-row discount"><span>Giảm giá (${appliedCoupon?.code})</span><span>-${formatVND(discountAmount)}</span></div>` : ''}
+    <div class="summary-row total" style="margin-top:8px;padding-top:8px;border-top:2px solid var(--color-border)"><span>Tổng thanh toán</span><span style="color:var(--color-cta)">${formatVND(final)}</span></div>
+  `;
+  document.getElementById('checkoutModal').classList.add('open');
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutModal').classList.remove('open');
+  document.getElementById('checkoutAlertBox').innerHTML = '';
+}
+
+async function placeOrder() {
+  const shippingName = document.getElementById('shippingName').value.trim();
+  const shippingPhone = document.getElementById('shippingPhone').value.trim();
+  const address = document.getElementById('shippingAddress').value.trim();
+  if (!shippingName || !shippingPhone || !address) {
+    document.getElementById('checkoutAlertBox').innerHTML = '<div class="alert alert-error">Vui lòng nhập đủ họ tên, số điện thoại, địa chỉ</div>';
+    return;
+  }
+
+  const paymentMethod = document.getElementById('paymentMethod').value;
+  const btn = document.getElementById('placeOrderBtn');
+  setLoading(btn, true);
+
+  try {
+    const res = await api.orders.create({
+      shippingName: shippingName,
+      shippingPhone: shippingPhone,
+      shippingAddress: address,
+      paymentMethod: paymentMethod,
+      notes: document.getElementById('orderNotes').value.trim() || null,
+      couponCode: appliedCoupon?.code || null
+    });
+    if (res.success && res.data) {
+      closeCheckout();
+      window.location.href = `checkout-success.html?orderId=${res.data.id}`;
+      return;
+    }
+    throw new Error('Đặt hàng thất bại');
+  } catch (err) {
+    document.getElementById('checkoutAlertBox').innerHTML = `<div class="alert alert-error">${err.message || 'Đặt hàng thất bại'}</div>`;
+    setLoading(btn, false);
+  }
+}
+</script>
+</body>
+</html>

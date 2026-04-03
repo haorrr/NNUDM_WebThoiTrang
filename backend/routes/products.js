@@ -7,7 +7,7 @@ let productController = require('../controllers/products');
 
 router.get('/', async function (req, res, next) {
   try {
-    let { title, categoryId, minPrice, maxPrice, status, page, limit } = req.query;
+    let { title, categoryId, minPrice, maxPrice, status, inStock, page, limit } = req.query;
     page = page ? parseInt(page) : 1;
     limit = limit ? parseInt(limit) : 10;
     let offset = (page - 1) * limit;
@@ -41,12 +41,17 @@ router.get('/', async function (req, res, next) {
       params.push(status);
       idx++;
     }
+    if (String(inStock || '').toLowerCase() === 'true') {
+      conditions.push('COALESCE(i.stock, 0) > 0');
+    }
 
     let where = conditions.join(' AND ');
     let result = await pool.query(
-      `SELECT p.*, c.name as category_name,
+      `SELECT p.*, c.name as category_name, COALESCE(i.stock, 0) as stock,
               (SELECT url FROM product_images WHERE product_id=p.id AND is_primary=true LIMIT 1) as primary_image
-       FROM products p LEFT JOIN categories c ON c.id=p.category_id
+       FROM products p
+       LEFT JOIN categories c ON c.id=p.category_id
+       LEFT JOIN inventories i ON i.product_id=p.id
        WHERE ${where}
        ORDER BY p.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, limit, offset]
@@ -71,7 +76,7 @@ router.get('/:id', async function (req, res, next) {
 
 router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
-    let { title, description, price, salePrice, categoryId, status } = req.body;
+    let { title, description, price, salePrice, categoryId, status, stock } = req.body;
     if (!title) {
       return res.status(400).send({ message: 'title la bat buoc' });
     }
@@ -85,8 +90,8 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
 
     let product = result.rows[0];
     await pool.query(
-      'INSERT INTO inventories (product_id, stock) VALUES ($1, 0)',
-      [product.id]
+      'INSERT INTO inventories (product_id, stock) VALUES ($1, $2)',
+      [product.id, Number(stock || 0)]
     );
     res.send(product);
   } catch (err) {
@@ -96,7 +101,7 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
 
 router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
-    let { title, description, price, salePrice, categoryId, status } = req.body;
+    let { title, description, price, salePrice, categoryId, status, stock } = req.body;
     let slug = null;
     if (title) {
       slug = slugify(title, { replacement: '-', locale: 'vi', trim: true, lower: true });
@@ -117,6 +122,12 @@ router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, nex
     );
     if (result.rows.length === 0) {
       return res.status(404).send({ message: 'id not found' });
+    }
+    if (stock !== undefined && stock !== null && stock !== '') {
+      await pool.query(
+        'UPDATE inventories SET stock=$1, updated_at=NOW() WHERE product_id=$2',
+        [Number(stock), req.params.id]
+      );
     }
     res.send(result.rows[0]);
   } catch (err) {
@@ -140,4 +151,3 @@ router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, 
 });
 
 module.exports = router;
-

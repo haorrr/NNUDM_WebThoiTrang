@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết đơn hàng — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <span class="section-label"><a href="orders.html" style="color:var(--color-cta)">← Đơn hàng</a></span>
+    <h1>Chi tiết đơn hàng</h1>
+    <p id="orderIdHeader"></p>
+  </div>
+</div>
+
+<div class="container page-content">
+  <div id="orderDetail"></div>
+</div>
+
+<footer class="footer">
+  <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/security.js"></script>
+<script>
+const ORDER_STEPS = ['PENDING','CONFIRMED','SHIPPING','DELIVERED'];
+const STEP_LABELS = ['Chờ xác nhận','Đã xác nhận','Đang giao','Đã giao'];
+const STEP_ICONS = [
+  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  '<polyline points="20 6 9 17 4 12"/>',
+  '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'
+];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  renderNavActions();
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get('id');
+  if (!orderId) { window.location.href = 'orders.html'; return; }
+
+  document.getElementById('orderIdHeader').textContent = `Mã đơn hàng: #${orderId}`;
+
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+
+  try {
+    const res = await api.orders.get(orderId);
+    if (res.success && res.data) renderOrder(res.data);
+  } catch {
+    document.getElementById('orderDetail').innerHTML = `<div class="alert alert-error">Không thể tải đơn hàng</div>`;
+  }
+});
+
+function renderOrder(o) {
+  const stepIdx = ORDER_STEPS.indexOf(o.status);
+  const isCancelled = o.status === 'CANCELLED';
+  const container = document.getElementById('orderDetail');
+
+  // Progress steps
+  let stepsHtml = isCancelled
+    ? `<div class="content-card" style="margin-bottom:1.5rem"><div style="text-align:center;padding:1.5rem">${getStatusBadge('CANCELLED')} <p style="margin-top:8px;color:var(--color-text-muted)">Đơn hàng đã bị hủy</p></div></div>`
+    : `<div class="content-card" style="margin-bottom:1.5rem">
+        <div class="order-progress">
+          ${ORDER_STEPS.map((s, i) => `
+            <div class="order-step ${i < stepIdx ? 'done' : ''} ${i === stepIdx ? 'active' : ''}">
+              <div class="step-dot">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${STEP_ICONS[i]}</svg>
+              </div>
+              <span class="step-label">${STEP_LABELS[i]}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+
+  // Items
+  const isDelivered = o.status === 'DELIVERED';
+  const itemsHtml = (o.items || []).map(item => `
+    <div style="display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--color-border)">
+      <img src="${item.imageUrl || 'images/product-jacket.png'}" alt="${item.productName}" style="width:64px;height:80px;object-fit:cover;border-radius:8px;background:#f5f5f4;flex-shrink:0">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px">${item.productName}</div>
+        <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:6px">${[item.size && `Size: ${item.size}`, item.color && `Màu: ${item.color}`].filter(Boolean).join(' · ')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:0.875rem;color:var(--color-text-muted)">× ${item.quantity}</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            ${isDelivered ? `<a href="product-detail.html?id=${item.productId}#reviews" style="font-size:0.8rem;color:var(--color-cta);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--color-cta);padding:3px 10px;border-radius:20px" onclick="sessionStorage.setItem('openReview','${item.productId}')">⭐ Đánh giá</a>` : ''}
+            <span style="font-family:var(--font-heading);font-weight:700">${formatVND((item.salePrice || item.price) * item.quantity)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    ${stepsHtml}
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem">
+      <div>
+        <div class="content-card">
+          <h2 class="content-card__title">Sản phẩm đặt mua</h2>
+          ${itemsHtml}
+        </div>
+      </div>
+      <div>
+        <div class="content-card">
+          <h2 class="content-card__title">Thông tin đơn hàng</h2>
+          <div class="summary-row"><span style="color:var(--color-text-muted)">Trạng thái</span><span>${getStatusBadge(o.status)}</span></div>
+          <div class="summary-row"><span style="color:var(--color-text-muted)">Ngày đặt</span><span>${formatDate(o.createdAt)}</span></div>
+          <div class="summary-row"><span style="color:var(--color-text-muted)">Thanh toán</span><span>
+            ${o.paymentMethod === 'MOMO' ? `<span style="display:inline-flex;align-items:center;gap:5px;font-size:0.82rem;padding:2px 10px;background:#f3e8ff;color:#6b21a8;border-radius:20px;border:1px solid #d8b4fe">
+              MoMo · ${o.paymentStatus === 'PAID' ? 'Đã thanh toán' : o.paymentStatus === 'FAILED' ? 'Thất bại' : 'Chờ thanh toán'}
+            </span>` : o.paymentMethod}
+          </span></div>
+          ${o.couponCode ? `<div class="summary-row"><span style="color:var(--color-text-muted)">Mã giảm giá</span><span>${o.couponCode}</span></div>` : ''}
+          <hr style="margin:12px 0;border:none;border-top:1px solid var(--color-border)">
+          <div class="summary-row"><span>Tạm tính</span><span>${formatVND(o.totalAmount)}</span></div>
+          ${o.discountAmount > 0 ? `<div class="summary-row discount"><span>Giảm giá</span><span>-${formatVND(o.discountAmount)}</span></div>` : ''}
+          <div class="summary-row total"><span>Tổng cộng</span><span style="color:var(--color-cta)">${formatVND(o.finalAmount)}</span></div>
+        </div>
+        <div class="content-card" style="margin-top:1rem">
+          <h2 class="content-card__title">Địa chỉ giao hàng</h2>
+          <p style="color:var(--color-secondary);font-size:0.9rem;line-height:1.6">${o.shippingAddress}</p>
+          ${o.notes ? `<p style="margin-top:8px;font-size:0.85rem;color:var(--color-text-muted)"><em>Ghi chú: ${o.notes}</em></p>` : ''}
+        </div>
+        ${(o.status === 'PENDING' || o.status === 'CONFIRMED') ? `
+          <button class="btn btn-danger" style="width:100%;margin-top:1rem" onclick="cancelOrder(${o.id})">Hủy đơn hàng</button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function cancelOrder(id) {
+  if (!confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
+  try {
+    const res = await api.orders.cancel(id);
+    if (res.success) { showToast('Đã hủy đơn hàng'); setTimeout(() => location.reload(), 800); }
+  } catch (err) { showToast(err.message || 'Không thể hủy đơn', 'error'); }
+}
+</script>
+</body>
+</html>

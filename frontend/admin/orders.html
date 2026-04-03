@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý đơn hàng — Admin MAISON</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../shared.css">
+</head>
+<body class="admin-page">
+<aside class="admin-sidebar">
+  <div class="sidebar-logo">MAISON<span>.</span></div>
+  <div class="sidebar-user"><div class="sidebar-user__name" id="sidebarUserName">Admin</div><div class="sidebar-user__role">Administrator</div></div>
+  <nav class="sidebar-nav">
+<div class="sidebar-section-title">Quản lý</div>
+    <a href="products.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>Sản phẩm</a>
+    <a href="categories.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>Danh mục</a>
+    <a href="orders.html" class="active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Đơn hàng</a>
+    <a href="flash-sales.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Flash Sale</a>
+    <a href="coupons.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Mã giảm giá</a>
+    <a href="users.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Người dùng</a>
+    <a href="reviews.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Đánh giá</a>
+  </nav>
+  <div class="sidebar-footer"><button class="btn btn-outline btn-sm" style="width:100%;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2)" onclick="handleLogout()">Đăng xuất</button></div>
+</aside>
+
+<main class="admin-main">
+  <div class="admin-topbar"><h1>Quản lý đơn hàng</h1><span id="orderCount" style="font-size:0.85rem;color:var(--color-text-muted)"></span></div>
+  <div class="admin-body">
+    <div class="admin-card">
+      <div class="filters-bar">
+        <input type="text" class="form-input filters-bar--search" id="searchInput" placeholder="Tìm email khách hàng..." oninput="debounceSearch()">
+        <select class="form-select" id="statusFilter" onchange="loadOrders()">
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ xác nhận</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="SHIPPING">Đang giao</option>
+          <option value="DELIVERED">Đã giao</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr><th>ID</th><th>Khách hàng</th><th>Tổng tiền</th><th>Thanh toán</th><th>Ngày đặt</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+      <div style="padding:1rem 1.5rem;display:flex;justify-content:center"><div class="pagination" id="pagination"></div></div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/api.js"></script>
+<script>
+let currentPage = 0;
+let searchTimeout;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn() || !Auth.isAdmin()) { window.location.href = '../login.html'; return; }
+  document.getElementById('sidebarUserName').textContent = Auth.getUser()?.name || 'Admin';
+  loadOrders();
+});
+
+function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 0; loadOrders(); }, 400); }
+
+async function loadOrders() {
+  const tbody = document.getElementById('ordersTable');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem">Đang tải...</td></tr>`;
+  const params = { page: currentPage, size: 15, sortBy: 'createdAt', sortDir: 'desc' };
+  const kw = document.getElementById('searchInput').value.trim();
+  const status = document.getElementById('statusFilter').value;
+  if (kw) params.email = kw;
+  if (status) params.status = status;
+
+  try {
+    const res = await api.orders.adminList(params);
+    if (res.success && res.data) {
+      const { content = [], totalElements = 0, totalPages = 0 } = res.data;
+      document.getElementById('orderCount').textContent = `${totalElements} đơn hàng`;
+      tbody.innerHTML = content.map(o => `
+        <tr>
+          <td><strong>#${o.id}</strong></td>
+          <td><div style="font-weight:600;font-size:0.875rem">${o.userEmail}</div></td>
+          <td style="font-weight:600;color:var(--color-cta)">${formatVND(o.finalAmount)}</td>
+          <td style="font-size:0.82rem">${o.paymentMethod}</td>
+          <td style="font-size:0.8rem;color:var(--color-text-muted)">${formatDate(o.createdAt)}</td>
+          <td>${getStatusBadge(o.status)}</td>
+          <td>
+            <select class="form-select" style="padding:5px 8px;font-size:0.78rem" onchange="updateStatus(${o.id}, this.value)" ${o.status === 'CANCELLED' || o.status === 'DELIVERED' ? 'disabled' : ''}>
+              <option value="PENDING" ${o.status==='PENDING'?'selected':''}>Chờ xác nhận</option>
+              <option value="CONFIRMED" ${o.status==='CONFIRMED'?'selected':''}>Xác nhận</option>
+              <option value="SHIPPING" ${o.status==='SHIPPING'?'selected':''}>Đang giao</option>
+              <option value="DELIVERED" ${o.status==='DELIVERED'?'selected':''}>Đã giao</option>
+              <option value="CANCELLED" ${o.status==='CANCELLED'?'selected':''}>Hủy</option>
+            </select>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Không có đơn hàng</td></tr>';
+      renderPagination(totalPages);
+    }
+  } catch { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#DC2626;padding:1rem">Lỗi tải dữ liệu</td></tr>`; }
+}
+
+async function updateStatus(id, status) {
+  try {
+    await api.orders.adminUpdateStatus(id, { status });
+    showToast('Đã cập nhật trạng thái đơn hàng');
+    loadOrders();
+  } catch (err) { showToast(err.message || 'Không thể cập nhật', 'error'); }
+}
+
+function renderPagination(total) {
+  const pg = document.getElementById('pagination');
+  if (total <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===0?'disabled':''}>←</button>`;
+  for (let i = 0; i < total; i++) {
+    if (Math.abs(i-currentPage)<=2||i===0||i===total-1) html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i+1}</button>`;
+    else if (Math.abs(i-currentPage)===3) html += `<span style="color:var(--color-text-muted)">…</span>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage>=total-1?'disabled':''}>→</button>`;
+  pg.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; loadOrders(); }
+</script>
+</body>
+</html>

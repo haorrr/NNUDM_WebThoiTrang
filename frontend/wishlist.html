@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yêu thích — MAISON</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
+  <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="page-header">
+  <div class="container">
+    <span class="section-label">Cá nhân</span>
+    <h1>Sản phẩm yêu thích</h1>
+    <p>Những sản phẩm bạn đã lưu</p>
+  </div>
+</div>
+
+<div class="container" style="padding-top:2.5rem;padding-bottom:4rem">
+  <div id="wishlistGrid" class="products-grid-4">
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+    <div class="skeleton" style="height:360px;border-radius:12px"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom">
+      <p>&copy; 2026 MAISON. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js?v=8"></script>
+<script src="js/security.js"></script>
+<script src="js/quick-buy.js?v=2"></script>
+<script>
+async function loadWishlist() {
+  if (!Auth.isLoggedIn()) { window.location.href = '/login.html'; return; }
+  const grid = document.getElementById('wishlistGrid');
+  try {
+    const res = await api.wishlist.get();
+    const items = res.data || [];
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <h3>Chưa có sản phẩm yêu thích</h3>
+          <p>Khám phá bộ sưu tập và thêm sản phẩm bạn yêu thích</p>
+          <a href="products.html" class="btn btn-primary btn-sm" style="margin-top:12px">Khám phá ngay</a>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = items.map(p => {
+      const img = p.primaryImageUrl || 'images/product-jacket.png';
+      const price = p.flashPrice || p.salePrice || p.price;
+      const hasDiscount = price < p.price;
+      return `
+        <div class="product-card reveal">
+          <div class="product-card__image" onclick="window.location.href='product-detail.html?id=${p.id}'" style="cursor:pointer">
+            <img src="${img}" alt="${p.name}" loading="lazy">
+            ${p.flashPrice ? '<span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">🔥 FLASH</span>' : ''}
+            <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${p.id})">Mua nhanh</button>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">${p.categoryName || ''}</span>
+            <h3 class="product-card__name">${p.name}</h3>
+            <div class="product-card__price">
+              <span class="current">${formatVND(price)}</span>
+              ${hasDiscount ? `<span class="original">${formatVND(p.price)}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-primary btn-sm" style="flex:1" onclick="openQuickBuy(${p.id})">Thêm giỏ</button>
+              <button class="btn btn-outline btn-sm" onclick="removeFromWishlist(${p.id},this.closest('.product-card'))">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+    grid.querySelectorAll('.reveal').forEach((el, i) => setTimeout(() => el.classList.add('visible'), i * 60));
+  } catch {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#DC2626">Không thể tải danh sách yêu thích</div>';
+  }
+}
+
+async function removeFromWishlist(productId, card) {
+  try {
+    await api.wishlist.toggle(productId);
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    card.style.transition = 'all 0.3s';
+    setTimeout(() => { card.remove(); checkEmpty(); }, 300);
+    showToast('Đã xóa khỏi yêu thích');
+  } catch {}
+}
+
+function checkEmpty() {
+  const grid = document.getElementById('wishlistGrid');
+  if (!grid.querySelector('.product-card')) loadWishlist();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNavActions();
+  loadWishlist();
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('hamburger').classList.toggle('active');
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

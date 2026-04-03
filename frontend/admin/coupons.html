@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mã giảm giá — Admin MAISON</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../shared.css">
+</head>
+<body class="admin-page">
+<aside class="admin-sidebar">
+  <div class="sidebar-logo">MAISON<span>.</span></div>
+  <div class="sidebar-user"><div class="sidebar-user__name" id="sidebarUserName">Admin</div><div class="sidebar-user__role">Administrator</div></div>
+  <nav class="sidebar-nav">
+<div class="sidebar-section-title">Quản lý</div>
+    <a href="products.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>Sản phẩm</a>
+    <a href="categories.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>Danh mục</a>
+    <a href="orders.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Đơn hàng</a>
+    <a href="flash-sales.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Flash Sale</a>
+    <a href="coupons.html" class="active"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Mã giảm giá</a>
+    <a href="users.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Người dùng</a>
+    <a href="reviews.html"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Đánh giá</a>
+  </nav>
+  <div class="sidebar-footer"><button class="btn btn-outline btn-sm" style="width:100%;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.2)" onclick="handleLogout()">Đăng xuất</button></div>
+</aside>
+
+<main class="admin-main">
+  <div class="admin-topbar">
+    <h1>Mã giảm giá</h1>
+    <button class="btn btn-primary btn-sm" onclick="openCouponModal()">+ Tạo mã mới</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr><th>Mã</th><th>Loại</th><th>Giảm giá</th><th>Đơn tối thiểu</th><th>Hạn dùng</th><th>Đã dùng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+          <tbody id="couponsTable"><tr><td colspan="8" style="text-align:center;padding:2rem">Đang tải...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="couponModal">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 id="modalTitle">Tạo mã giảm giá</h3>
+      <button class="modal__close" onclick="closeModal()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="modalAlert"></div>
+    <form id="couponForm">
+      <div class="form-group"><label class="form-label">Mã code *</label><input class="form-input" id="cCode" placeholder="MAISON10" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Loại *</label><select class="form-select" id="cType"><option value="PERCENT">Phần trăm (%)</option><option value="FIXED">Cố định (VND)</option></select></div>
+        <div class="form-group"><label class="form-label">Giá trị *</label><input class="form-input" type="number" id="cValue" placeholder="10" required min="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Đơn tối thiểu</label><input class="form-input" type="number" id="cMinOrder" placeholder="0" min="0"></div>
+        <div class="form-group"><label class="form-label">Số lần dùng tối đa</label><input class="form-input" type="number" id="cMaxUses" placeholder="100" min="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Ngày bắt đầu</label><input class="form-input" type="datetime-local" id="cStartDate"></div>
+        <div class="form-group"><label class="form-label">Ngày hết hạn</label><input class="form-input" type="datetime-local" id="cEndDate"></div>
+      </div>
+      <input type="hidden" id="cId">
+    </form>
+    <div class="modal__footer">
+      <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
+      <button class="btn btn-primary" id="saveCouponBtn" onclick="saveCoupon()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn() || !Auth.isAdmin()) { window.location.href = '../login.html'; return; }
+  document.getElementById('sidebarUserName').textContent = Auth.getUser()?.name || 'Admin';
+  loadCoupons();
+});
+
+async function loadCoupons() {
+  const tbody = document.getElementById('couponsTable');
+  try {
+    const res = await api.coupons.list();
+    if (res.success) {
+      const coupons = res.data || [];
+      tbody.innerHTML = coupons.length ? coupons.map(c => `
+        <tr>
+          <td><span style="font-family:monospace;font-weight:700;background:var(--color-gold-light);padding:3px 8px;border-radius:4px">${c.code}</span></td>
+          <td style="font-size:0.82rem">${c.discountType === 'PERCENT' ? 'Phần trăm' : 'Cố định'}</td>
+          <td style="font-weight:600;color:var(--color-cta)">${c.discountType === 'PERCENT' ? c.discountValue + '%' : formatVND(c.discountValue)}</td>
+          <td>${c.minOrderAmount ? formatVND(c.minOrderAmount) : '—'}</td>
+          <td style="font-size:0.8rem">${c.expiresAt ? formatDate(c.expiresAt) : '—'}</td>
+          <td>${c.usedCount || 0} / ${c.maxUses || '∞'}</td>
+          <td>${getStatusBadge(c.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE')}</td>
+          <td><div class="actions">
+            <button class="btn btn-xs btn-outline" onclick="editCoupon(${c.id})">Sửa</button>
+            <button class="btn btn-xs ${c.status === 'ACTIVE' ? 'btn-danger' : 'btn-success'}" onclick="toggleCoupon(${c.id})">${c.status === 'ACTIVE' ? 'Tắt' : 'Bật'}</button>
+          </div></td>
+        </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Chưa có mã giảm giá</td></tr>`;
+    }
+  } catch { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#DC2626;padding:1rem">Lỗi tải dữ liệu</td></tr>`; }
+}
+
+function openCouponModal(id = null) {
+  document.getElementById('modalTitle').textContent = id ? 'Chỉnh sửa mã' : 'Tạo mã giảm giá';
+  document.getElementById('couponForm').reset(); document.getElementById('cId').value = id || '';
+  document.getElementById('modalAlert').innerHTML = ''; document.getElementById('couponModal').classList.add('open');
+}
+
+async function editCoupon(id) {
+  openCouponModal(id);
+  try {
+    const res = await api.coupons.get(id);
+    if (res.success && res.data) {
+      const c = res.data;
+      document.getElementById('cCode').value = c.code; document.getElementById('cType').value = c.discountType;
+      document.getElementById('cValue').value = c.discountValue; document.getElementById('cMinOrder').value = c.minOrderAmount || '';
+      document.getElementById('cMaxUses').value = c.maxUses || '';
+    }
+  } catch {}
+}
+
+function closeModal() { document.getElementById('couponModal').classList.remove('open'); }
+
+async function saveCoupon() {
+  const id = document.getElementById('cId').value;
+  const alertBox = document.getElementById('modalAlert');
+  alertBox.innerHTML = '';
+  const data = { code: document.getElementById('cCode').value.trim().toUpperCase(), discountType: document.getElementById('cType').value,
+    discountValue: parseFloat(document.getElementById('cValue').value), minOrderAmount: document.getElementById('cMinOrder').value ? parseFloat(document.getElementById('cMinOrder').value) : 0,
+    maxUses: document.getElementById('cMaxUses').value ? parseInt(document.getElementById('cMaxUses').value) : null,
+    expiresAt: document.getElementById('cEndDate').value || null };
+  if (!data.code || !data.discountValue) { alertBox.innerHTML = `<div class="alert alert-error">Vui lòng điền đầy đủ thông tin</div>`; return; }
+  const btn = document.getElementById('saveCouponBtn'); setLoading(btn, true);
+  try {
+    const res = id ? await api.coupons.update(id, data) : await api.coupons.create(data);
+    if (res.success) { closeModal(); showToast(id ? 'Đã cập nhật' : 'Đã tạo mã mới'); loadCoupons(); }
+  } catch (err) { alertBox.innerHTML = `<div class="alert alert-error">${err.message || 'Có lỗi xảy ra'}</div>`; setLoading(btn, false); }
+}
+
+async function toggleCoupon(id) {
+  try { await api.coupons.toggle(id); showToast('Đã cập nhật'); loadCoupons(); }
+  catch { showToast('Không thể cập nhật', 'error'); }
+}
+</script>
+</body>
+</html>
