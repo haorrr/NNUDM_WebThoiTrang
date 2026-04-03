@@ -30,6 +30,8 @@ app.use('/api/v1/products/:productId/variants', require('./routes/product_varian
 app.use('/api/v1/products/:productId/images', require('./routes/product_images'));
 app.use('/api/v1/inventories', require('./routes/inventories'));
 app.use('/api/v1/carts', require('./routes/carts'));
+app.use('/api/v1/orders', require('./routes/orders'));
+app.use('/api/v1/payments', require('./routes/payments'));
 
 app.use(function (req, res, next) {
   next(createError(404));
@@ -41,4 +43,3 @@ app.use(function (err, req, res, next) {
 });
 
 module.exports = app;
-

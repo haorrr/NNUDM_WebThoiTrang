@@ -102,3 +102,64 @@ CREATE TABLE cart_items (
   UNIQUE(cart_id, product_id, variant_id)
 );
 
+CREATE TABLE coupons (
+  id               SERIAL PRIMARY KEY,
+  code             VARCHAR(100) UNIQUE NOT NULL,
+  type             VARCHAR(20) NOT NULL,
+  value            NUMERIC(15,2) NOT NULL,
+  min_order_amount NUMERIC(15,2) DEFAULT 0,
+  max_uses         INT DEFAULT 0,
+  used_count       INT DEFAULT 0,
+  expires_at       TIMESTAMP,
+  is_active        BOOLEAN DEFAULT TRUE,
+  is_deleted       BOOLEAN DEFAULT FALSE,
+  created_at       TIMESTAMP DEFAULT NOW(),
+  updated_at       TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE orders (
+  id               SERIAL PRIMARY KEY,
+  user_id          INT REFERENCES users(id),
+  status           VARCHAR(50) DEFAULT 'PENDING',
+  total_amount     NUMERIC(15,2) DEFAULT 0,
+  discount_amount  NUMERIC(15,2) DEFAULT 0,
+  final_amount     NUMERIC(15,2) DEFAULT 0,
+  coupon_code      VARCHAR(100),
+  shipping_name    VARCHAR(200),
+  shipping_phone   VARCHAR(20),
+  shipping_address TEXT,
+  notes            TEXT DEFAULT '',
+  payment_method   VARCHAR(50) DEFAULT 'COD',
+  payment_status   VARCHAR(50) DEFAULT 'N_A',
+  is_deleted       BOOLEAN DEFAULT FALSE,
+  created_at       TIMESTAMP DEFAULT NOW(),
+  updated_at       TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE order_items (
+  id           SERIAL PRIMARY KEY,
+  order_id     INT REFERENCES orders(id) ON DELETE CASCADE,
+  product_id   INT REFERENCES products(id),
+  variant_id   INT REFERENCES product_variants(id),
+  product_title VARCHAR(300),
+  variant_info VARCHAR(200),
+  price        NUMERIC(15,2) NOT NULL,
+  quantity     INT NOT NULL,
+  subtotal     NUMERIC(15,2) NOT NULL,
+  created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE payments (
+  id                SERIAL PRIMARY KEY,
+  user_id           INT REFERENCES users(id),
+  order_id          INT REFERENCES orders(id),
+  method            VARCHAR(50) DEFAULT 'cod',
+  status            VARCHAR(50) DEFAULT 'pending',
+  amount            NUMERIC(15,2) NOT NULL,
+  transaction_id    VARCHAR(200) DEFAULT '',
+  provider_response JSONB,
+  paid_at           TIMESTAMP,
+  note              TEXT DEFAULT '',
+  created_at        TIMESTAMP DEFAULT NOW(),
+  updated_at        TIMESTAMP DEFAULT NOW()
+);
