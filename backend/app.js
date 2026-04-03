@@ -32,6 +32,8 @@ app.use('/api/v1/inventories', require('./routes/inventories'));
 app.use('/api/v1/carts', require('./routes/carts'));
 app.use('/api/v1/orders', require('./routes/orders'));
 app.use('/api/v1/payments', require('./routes/payments'));
+app.use('/api/v1/reviews', require('./routes/reviews'));
+app.use('/api/v1/coupons', require('./routes/coupons'));
 
 app.use(function (req, res, next) {
   next(createError(404));
