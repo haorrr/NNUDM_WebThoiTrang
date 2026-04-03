@@ -31,8 +31,8 @@ router.post('/', checkLogin, async function (req, res, next) {
 
     let totalAmount = 0;
     for (let item of items.rows) {
-      let basePrice = item.sale_price || item.price;
-      let adjustment = item.price_adjustment || 0;
+      let basePrice = Number(item.sale_price || item.price || 0);
+      let adjustment = Number(item.price_adjustment || 0);
       totalAmount += (basePrice + adjustment) * item.quantity;
     }
 
@@ -81,8 +81,8 @@ router.post('/', checkLogin, async function (req, res, next) {
     let order = orderResult.rows[0];
 
     for (let item of items.rows) {
-      let basePrice = item.sale_price || item.price;
-      let adjustment = item.price_adjustment || 0;
+      let basePrice = Number(item.sale_price || item.price || 0);
+      let adjustment = Number(item.price_adjustment || 0);
       let unitPrice = basePrice + adjustment;
       let variantInfo = [item.size, item.color].filter(Boolean).join(' / ');
       await pool.query(
@@ -224,4 +224,3 @@ router.put('/admin/:id/status', checkLogin, checkRole('ADMIN'), async function (
 });
 
 module.exports = router;
-
