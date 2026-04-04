@@ -1,68 +1,107 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đặt hàng thành công — MAISON</title>
+  <title>Đặt hàng thành công - MAISON</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="shared.css">
 </head>
 <body>
 <nav class="navbar" id="navbar">
   <a href="index.html" class="navbar__logo">MAISON<span>.</span></a>
+  <div class="navbar__links" id="navLinks">
+    <a href="products.html">Bộ sưu tập</a>
+    <a href="index.html#story">Về chúng tôi</a>
+    <a href="index.html#testimonials">Đánh giá</a>
+    <a href="index.html#newsletter">Liên hệ</a>
+  </div>
   <div class="navbar__actions" id="navActions"></div>
+  <button class="navbar__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
 
-<div class="container" style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding-top:100px;padding-bottom:4rem">
-  <div style="text-align:center;max-width:480px">
-    <div style="width:80px;height:80px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+<div class="container" style="padding-top:120px;padding-bottom:4rem;min-height:80vh;display:flex;align-items:flex-start;justify-content:center">
+  <div style="width:100%;max-width:560px;text-align:center">
+    <div style="width:82px;height:82px;border-radius:50%;background:#CFF5DD;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <h1 style="font-size:2rem;font-weight:900;margin-bottom:0.75rem">Đặt hàng thành công!</h1>
-    <p style="color:var(--color-text-muted);margin-bottom:0.5rem">Cảm ơn bạn đã mua sắm tại MAISON.</p>
-    <p style="color:var(--color-text-muted);margin-bottom:2rem">Mã đơn hàng: <strong id="orderId" style="color:var(--color-primary)"></strong></p>
 
-    <div id="orderInfo" style="background:#fff;border:1px solid var(--color-border);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:2rem"></div>
+    <h1 style="font-family:var(--font-heading);font-size:2.35rem;line-height:1.15;margin-bottom:0.5rem">Đặt hàng thành công!</h1>
+    <p style="color:var(--color-text-muted);margin-bottom:0.6rem">Cảm ơn bạn đã mua sắm tại MAISON.</p>
+    <p style="font-size:1.3rem;font-weight:700;margin-bottom:1.8rem">Mã đơn hàng: <span id="orderCode" style="color:var(--color-primary)">#--</span></p>
 
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-      <a href="#" id="orderDetailBtn" class="btn btn-primary">Xem chi tiết đơn hàng</a>
-      <a href="orders.html" class="btn btn-dark">Xem đơn hàng</a>
-      <a href="products.html" class="btn btn-outline">Tiếp tục mua sắm</a>
+    <div class="content-card" style="text-align:left;padding:1.35rem 1.5rem;margin-bottom:1.4rem">
+      <div class="summary-row"><span style="color:var(--color-text-muted)">Trạng thái</span><span id="orderStatus">--</span></div>
+      <div class="summary-row"><span style="color:var(--color-text-muted)">Địa chỉ</span><span id="orderAddress" style="text-align:right;max-width:68%">--</span></div>
+      <div class="summary-row"><span style="color:var(--color-text-muted)">Thanh toán</span><span id="orderPayment">--</span></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid var(--color-border)">
+      <div class="summary-row total"><span>Tổng thanh toán</span><span id="orderTotal" style="color:var(--color-cta)">--</span></div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a id="viewOrderBtn" href="orders.html" class="btn btn-dark" style="min-width:190px">Xem đơn hàng</a>
+      <a href="products.html" class="btn btn-outline" style="min-width:190px">Tiếp tục mua sắm</a>
     </div>
   </div>
 </div>
 
-<script src="js/api.js?v=10"></script>
+<footer class="footer">
+  <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
+</footer>
+
+<script src="js/api.js?v=11"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
+function getOrderId() {
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('orderId') || params.get('id');
+  if (id) return id;
+  try {
+    var last = sessionStorage.getItem('lastOrderId');
+    if (last) return last;
+  } catch (e) {}
+  return null;
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
   renderNavActions();
-  const params = new URLSearchParams(window.location.search);
-  const orderId = params.get('orderId');
+  updateCartCount();
+
+  var orderId = getOrderId();
   if (!orderId) {
-    window.location.href = 'index.html';
+    showToast('Không tìm thấy mã đơn hàng', 'error');
+    window.location.href = 'orders.html';
     return;
   }
 
-  document.getElementById('orderId').textContent = `#${orderId}`;
-  const orderDetailBtn = document.getElementById('orderDetailBtn');
-  orderDetailBtn.href = `order-detail.html?id=${orderId}`;
-  orderDetailBtn.onclick = function () {
-    try { sessionStorage.setItem('lastOrderId', String(orderId)); } catch (e) {}
-  };
+  try { sessionStorage.setItem('lastOrderId', String(orderId)); } catch (e) {}
+
+  document.getElementById('orderCode').textContent = '#' + orderId;
+  document.getElementById('viewOrderBtn').href = 'order-detail.html?id=' + orderId;
 
   try {
-    const res = await api.orders.get(orderId);
-    if (res.success && res.data) {
-      const o = res.data;
-      document.getElementById('orderInfo').innerHTML = `
-        <div class="summary-row"><span style="color:var(--color-text-muted)">Trạng thái</span><span>${getStatusBadge(o.status)}</span></div>
-        <div class="summary-row"><span style="color:var(--color-text-muted)">Địa chỉ</span><span style="text-align:right;max-width:60%">${o.shippingAddress}</span></div>
-        <div class="summary-row"><span style="color:var(--color-text-muted)">Thanh toán</span><span>${o.paymentMethod}</span></div>
-        <div class="summary-row total"><span>Tổng thanh toán</span><span style="color:var(--color-cta)">${formatVND(o.finalAmount)}</span></div>
-      `;
+    var res = await api.orders.get(orderId);
+    if (res && res.success && res.data) {
+      var o = res.data;
+      document.getElementById('orderStatus').innerHTML = getStatusBadge(o.status || 'PENDING');
+      document.getElementById('orderAddress').textContent = o.shippingAddress || '--';
+      document.getElementById('orderPayment').textContent = o.paymentMethod || 'COD';
+      document.getElementById('orderTotal').textContent = formatVND(o.finalAmount || 0);
     }
-  } catch {}
-  updateCartCount();
+  } catch (err) {
+    document.getElementById('orderStatus').textContent = 'Chờ xác nhận';
+  }
+
+  window.addEventListener('scroll', function () {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+
+  var hamburger = document.getElementById('hamburger');
+  if (hamburger) {
+    hamburger.addEventListener('click', function () {
+      hamburger.classList.toggle('active');
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+  }
 });
 </script>
 </body>

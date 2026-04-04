@@ -41,10 +41,20 @@
   <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
 </footer>
 
-<script src="js/api.js?v=10"></script>
+<script src="js/api.js?v=11"></script>
 <script src="js/quick-buy.js?v=3"></script>
 <script>
 let countdownInterval;
+
+function openProductDetail(productId) {
+  const id = Number(productId);
+  if (!id) {
+    showToast('Khong tim thay ma san pham', 'error');
+    return;
+  }
+  try { sessionStorage.setItem('lastProductId', String(id)); } catch (e) {}
+  window.location.assign(`product-detail.html?id=${id}`);
+}
 
 async function loadFlashSale() {
   const params = new URLSearchParams(location.search);
@@ -87,15 +97,16 @@ async function loadFlashSale() {
     }
 
     grid.innerHTML = fs.products.map(entry => {
+      const productId = Number(entry.productId || entry.product_id || 0);
       const img = entry.primaryImageUrl || 'images/product-jacket.png';
       const pct = Math.round((1 - entry.flashPrice / entry.originalPrice) * 100);
       const sold = entry.stockLimit ? Math.round((entry.soldCount / entry.stockLimit) * 100) : 0;
       return `
         <div class="product-card reveal">
-          <div class="product-card__image" onclick="window.location.href='product-detail.html?id=${entry.productId}'" style="cursor:pointer">
+          <div class="product-card__image" onclick="openProductDetail(${productId})" style="cursor:pointer">
             <img src="${img}" alt="${entry.productName}" loading="lazy">
             <span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">-${pct}%</span>
-            <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${entry.productId})">Mua nhanh</button>
+            <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${productId})">Mua nhanh</button>
           </div>
           <div class="product-card__info">
             <h3 class="product-card__name">${entry.productName}</h3>

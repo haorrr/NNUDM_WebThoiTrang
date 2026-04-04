@@ -670,7 +670,28 @@ const api = {
   },
 
   wishlist: {
-    get: function () { return apiFetch('/wishlists'); },
+    get: async function () {
+      const rows = await rawFetch('/wishlists');
+      const items = (rows || []).map(function (r) {
+        const productId = r.product_id || r.productId || r.id;
+        const price = toNumber(r.price, 0);
+        const salePrice = r.sale_price != null ? toNumber(r.sale_price, 0) : null;
+        return {
+          id: productId,
+          productId: productId,
+          name: r.name || r.title || '',
+          title: r.title || r.name || '',
+          slug: r.slug || '',
+          price: price,
+          salePrice: salePrice,
+          flashPrice: null,
+          categoryName: r.category_name || '',
+          primaryImageUrl: toAbsoluteAssetUrl(r.primary_image || r.image || ''),
+          imageUrl: toAbsoluteAssetUrl(r.primary_image || r.image || '')
+        };
+      });
+      return { success: true, data: items };
+    },
     toggle: function (productId) { return apiFetch('/wishlists/' + productId, { method: 'POST' }); },
     check: async function (productId) {
       const r = await rawFetch('/wishlists/check/' + productId);

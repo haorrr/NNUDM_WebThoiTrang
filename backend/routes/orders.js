@@ -3,6 +3,24 @@ var router = express.Router();
 let pool = require('../db/index');
 let { checkLogin, checkRole } = require('../utils/authHandler');
 
+let syncInventoryFromVariants = async function (client, productId) {
+  let sum = await client.query(
+    'SELECT COALESCE(SUM(stock), 0)::int as total FROM product_variants WHERE product_id=$1 AND is_deleted=false',
+    [productId]
+  );
+  let total = Number(sum.rows[0].total || 0);
+  let updated = await client.query(
+    'UPDATE inventories SET stock=$1, updated_at=NOW() WHERE product_id=$2 RETURNING product_id',
+    [total, productId]
+  );
+  if (updated.rows.length === 0) {
+    await client.query(
+      'INSERT INTO inventories (product_id, stock) VALUES ($1, $2)',
+      [productId, total]
+    );
+  }
+};
+
 let restoreStockForOrder = async function (client, orderId) {
   let items = await client.query(
     'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id=$1',
@@ -10,14 +28,16 @@ let restoreStockForOrder = async function (client, orderId) {
   );
 
   for (let item of items.rows) {
-    await client.query(
-      'UPDATE inventories SET stock=stock+$1, updated_at=NOW() WHERE product_id=$2',
-      [item.quantity, item.product_id]
-    );
     if (item.variant_id) {
       await client.query(
         'UPDATE product_variants SET stock=stock+$1, updated_at=NOW() WHERE id=$2 AND is_deleted=false',
         [item.quantity, item.variant_id]
+      );
+      await syncInventoryFromVariants(client, item.product_id);
+    } else {
+      await client.query(
+        'UPDATE inventories SET stock=stock+$1, updated_at=NOW() WHERE product_id=$2',
+        [item.quantity, item.product_id]
       );
     }
   }
@@ -56,19 +76,6 @@ router.post('/', checkLogin, async function (req, res, next) {
     }
 
     for (let item of items.rows) {
-      let inv = await client.query(
-        'SELECT stock FROM inventories WHERE product_id=$1 FOR UPDATE',
-        [item.product_id]
-      );
-      if (inv.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(400).send({ message: 'khong tim thay ton kho san pham ' + item.product_id });
-      }
-      if (Number(inv.rows[0].stock || 0) < item.quantity) {
-        await client.query('ROLLBACK');
-        return res.status(400).send({ message: 'san pham "' + item.title + '" khong du ton kho' });
-      }
-
       if (item.variant_id) {
         let variant = await client.query(
           'SELECT stock FROM product_variants WHERE id=$1 AND is_deleted=false FOR UPDATE',
@@ -81,6 +88,19 @@ router.post('/', checkLogin, async function (req, res, next) {
         if (Number(variant.rows[0].stock || 0) < item.quantity) {
           await client.query('ROLLBACK');
           return res.status(400).send({ message: 'bien the cua san pham "' + item.title + '" khong du ton kho' });
+        }
+      } else {
+        let inv = await client.query(
+          'SELECT stock FROM inventories WHERE product_id=$1 FOR UPDATE',
+          [item.product_id]
+        );
+        if (inv.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(400).send({ message: 'khong tim thay ton kho san pham ' + item.product_id });
+        }
+        if (Number(inv.rows[0].stock || 0) < item.quantity) {
+          await client.query('ROLLBACK');
+          return res.status(400).send({ message: 'san pham "' + item.title + '" khong du ton kho' });
         }
       }
     }
@@ -156,14 +176,16 @@ router.post('/', checkLogin, async function (req, res, next) {
         ]
       );
 
-      await client.query(
-        'UPDATE inventories SET stock=stock-$1, updated_at=NOW() WHERE product_id=$2',
-        [item.quantity, item.product_id]
-      );
       if (item.variant_id) {
         await client.query(
           'UPDATE product_variants SET stock=stock-$1, updated_at=NOW() WHERE id=$2 AND is_deleted=false',
           [item.quantity, item.variant_id]
+        );
+        await syncInventoryFromVariants(client, item.product_id);
+      } else {
+        await client.query(
+          'UPDATE inventories SET stock=stock-$1, updated_at=NOW() WHERE product_id=$2',
+          [item.quantity, item.product_id]
         );
       }
     }
