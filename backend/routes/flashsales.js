@@ -16,9 +16,10 @@ router.get('/active', async function (req, res, next) {
        FROM flash_sales fs
        LEFT JOIN flash_sale_products fsp ON fsp.flash_sale_id=fs.id
        LEFT JOIN products p ON p.id=fsp.product_id
-       WHERE fs.is_deleted=false AND fs.status='ACTIVE'
+       WHERE fs.is_deleted=false AND fs.status IN ('ACTIVE', 'SCHEDULED')
          AND fs.starts_at <= NOW() AND fs.ends_at >= NOW()
-       GROUP BY fs.id`
+       GROUP BY fs.id
+       ORDER BY fs.starts_at DESC`
     );
     res.send(result.rows);
   } catch (err) {
@@ -146,4 +147,3 @@ router.delete('/:id/products/:productId', checkLogin, checkRole('ADMIN'), async 
 });
 
 module.exports = router;
-

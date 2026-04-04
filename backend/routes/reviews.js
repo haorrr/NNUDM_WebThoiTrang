@@ -25,13 +25,25 @@ router.get('/product/:productId', async function (req, res, next) {
 
 router.get('/admin/pending', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
+    let status = req.query.status;
+    let params = [];
+    let where = `r.is_deleted=false`;
+    if (status) {
+      params.push(status);
+      where += ` AND r.status=$1`;
+    }
+
     let result = await pool.query(
-      `SELECT r.*, u.username, p.title as product_title
+      `SELECT r.*, u.username, p.title as product_title,
+              json_agg(ri.url) FILTER (WHERE ri.id IS NOT NULL) as images
        FROM reviews r
        JOIN users u ON u.id=r.user_id
        JOIN products p ON p.id=r.product_id
-       WHERE r.status='PENDING' AND r.is_deleted=false
-       ORDER BY r.created_at DESC`
+       LEFT JOIN review_images ri ON ri.review_id=r.id
+       WHERE ${where}
+       GROUP BY r.id, u.username, p.title
+       ORDER BY r.created_at DESC`,
+      params
     );
     res.send(result.rows);
   } catch (err) {
@@ -155,4 +167,3 @@ router.put('/admin/:id/status', checkLogin, checkRole('ADMIN'), async function (
 });
 
 module.exports = router;
-

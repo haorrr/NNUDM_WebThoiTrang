@@ -1,5 +1,15 @@
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000/api/v1' : '/api/v1';
 
+function toAbsoluteAssetUrl(url) {
+  if (!url) return '';
+  if (String(url).startsWith('http://') || String(url).startsWith('https://')) return url;
+  if (String(url).startsWith('/')) {
+    if (window.location.hostname === 'localhost') return 'http://localhost:3000' + url;
+    return url;
+  }
+  return url;
+}
+
 const Auth = {
   getAccess: function () { return localStorage.getItem('accessToken'); },
   getRefresh: function () { return localStorage.getItem('refreshToken'); },
@@ -534,7 +544,7 @@ const api = {
           userName: r.username,
           avatarUrl: r.avatar_url,
           createdAt: r.created_at,
-          imageUrls: Array.isArray(r.images) ? r.images.filter(Boolean) : []
+          imageUrls: Array.isArray(r.images) ? r.images.filter(Boolean).map(toAbsoluteAssetUrl) : []
         };
       });
       return { success: true, data: { content: content, totalElements: content.length, totalPages: content.length > 0 ? 1 : 0 } };
@@ -565,9 +575,24 @@ const api = {
     },
     update: function (id, data) { return apiFetch('/reviews/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
     delete: function (id) { return apiFetch('/reviews/' + id, { method: 'DELETE' }); },
-    adminList: async function () {
-      const rows = await rawFetch('/reviews/admin/pending');
-      return { success: true, data: { content: rows || [], totalElements: (rows || []).length, totalPages: (rows || []).length > 0 ? 1 : 0 } };
+    adminList: async function (params) {
+      const p = Object.assign({}, params || {});
+      if (p.status === '' || p.status == null) delete p.status;
+      const rows = await rawFetch('/reviews/admin/pending' + (Object.keys(p).length > 0 ? '?' + new URLSearchParams(p).toString() : ''));
+      const content = (rows || []).map(function (r) {
+        return {
+          id: r.id,
+          productId: r.product_id,
+          productName: r.product_title,
+          rating: toNumber(r.rating, 0),
+          comment: r.comment || '',
+          status: r.status || 'PENDING',
+          userName: r.username || '',
+          createdAt: r.created_at,
+          imageUrls: Array.isArray(r.images) ? r.images.filter(Boolean).map(toAbsoluteAssetUrl) : []
+        };
+      });
+      return { success: true, data: { content: content, totalElements: content.length, totalPages: content.length > 0 ? 1 : 0 } };
     },
     adminModerate: function (id, status) {
       return apiFetch('/reviews/admin/' + id + '/status', { method: 'PUT', body: JSON.stringify({ status: status }) });
