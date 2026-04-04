@@ -78,11 +78,25 @@
   </div>
 </footer>
 
-<script src="js/api.js?v=8"></script>
-<script src="js/security.js"></script>
+<script src="js/api.js?v=9"></script>
 <script>
-const params = new URLSearchParams(window.location.search);
-const productId = params.get('id');
+function resolveProductId() {
+  const params = new URLSearchParams(window.location.search);
+  let id = params.get('id');
+  if (id) return id;
+
+  const path = window.location.pathname || '';
+  const m = path.match(/product-detail(?:\.html)?\/(\d+)/i);
+  if (m && m[1]) return m[1];
+
+  try {
+    const saved = sessionStorage.getItem('lastProductId');
+    if (saved) return saved;
+  } catch (e) {}
+  return null;
+}
+
+const productId = resolveProductId();
 
 let selectedSize = '';
 let selectedColor = '';
@@ -486,7 +500,11 @@ async function submitReview() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   renderNavActions();
-  if (!productId) { window.location.href = 'products.html'; return; }
+  if (!productId) {
+    document.getElementById('productContent').innerHTML = `<div class="alert alert-error" style="grid-column:1/-1">Thiếu mã sản phẩm. Vui lòng quay lại trang sản phẩm.</div>`;
+    return;
+  }
+  try { sessionStorage.setItem('lastProductId', String(productId)); } catch (e) {}
   window.addEventListener('scroll', () => {
     document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
   }, { passive: true });

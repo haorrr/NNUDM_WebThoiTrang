@@ -68,7 +68,11 @@
     document.getElementById('qb-image').alt = p.name;
     document.getElementById('qb-category').textContent = p.category?.name || '';
     document.getElementById('qb-name').textContent = p.name;
-    document.getElementById('qb-detail-link').href = `product-detail.html?id=${p.id}`;
+    const detailLink = document.getElementById('qb-detail-link');
+    detailLink.href = `product-detail.html?id=${p.id}`;
+    detailLink.onclick = function () {
+      try { sessionStorage.setItem('lastProductId', String(p.id)); } catch (e) {}
+    };
     document.getElementById('qb-qty').textContent = '1';
 
     // Price

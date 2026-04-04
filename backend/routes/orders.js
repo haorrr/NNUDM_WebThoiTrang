@@ -3,21 +3,46 @@ var router = express.Router();
 let pool = require('../db/index');
 let { checkLogin, checkRole } = require('../utils/authHandler');
 
+let restoreStockForOrder = async function (client, orderId) {
+  let items = await client.query(
+    'SELECT product_id, variant_id, quantity FROM order_items WHERE order_id=$1',
+    [orderId]
+  );
+
+  for (let item of items.rows) {
+    await client.query(
+      'UPDATE inventories SET stock=stock+$1, updated_at=NOW() WHERE product_id=$2',
+      [item.quantity, item.product_id]
+    );
+    if (item.variant_id) {
+      await client.query(
+        'UPDATE product_variants SET stock=stock+$1, updated_at=NOW() WHERE id=$2 AND is_deleted=false',
+        [item.quantity, item.variant_id]
+      );
+    }
+  }
+};
+
 router.post('/', checkLogin, async function (req, res, next) {
+  let client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     let userId = req.user.id;
     let { shippingName, shippingPhone, shippingAddress, notes, paymentMethod, couponCode } = req.body;
     if (!shippingName || !shippingPhone || !shippingAddress) {
+      await client.query('ROLLBACK');
       return res.status(400).send({ message: 'thong tin giao hang la bat buoc' });
     }
 
-    let cart = await pool.query('SELECT id FROM carts WHERE user_id=$1', [userId]);
+    let cart = await client.query('SELECT id FROM carts WHERE user_id=$1', [userId]);
     if (cart.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).send({ message: 'gio hang trong' });
     }
     let cartId = cart.rows[0].id;
 
-    let items = await pool.query(
+    let items = await client.query(
       `SELECT ci.*, p.title, p.price, p.sale_price, pv.price_adjustment, pv.size, pv.color
        FROM cart_items ci
        JOIN products p ON p.id=ci.product_id
@@ -26,7 +51,38 @@ router.post('/', checkLogin, async function (req, res, next) {
       [cartId]
     );
     if (items.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).send({ message: 'gio hang trong' });
+    }
+
+    for (let item of items.rows) {
+      let inv = await client.query(
+        'SELECT stock FROM inventories WHERE product_id=$1 FOR UPDATE',
+        [item.product_id]
+      );
+      if (inv.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).send({ message: 'khong tim thay ton kho san pham ' + item.product_id });
+      }
+      if (Number(inv.rows[0].stock || 0) < item.quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).send({ message: 'san pham "' + item.title + '" khong du ton kho' });
+      }
+
+      if (item.variant_id) {
+        let variant = await client.query(
+          'SELECT stock FROM product_variants WHERE id=$1 AND is_deleted=false FOR UPDATE',
+          [item.variant_id]
+        );
+        if (variant.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(400).send({ message: 'bien the khong ton tai' });
+        }
+        if (Number(variant.rows[0].stock || 0) < item.quantity) {
+          await client.query('ROLLBACK');
+          return res.status(400).send({ message: 'bien the cua san pham "' + item.title + '" khong du ton kho' });
+        }
+      }
     }
 
     let totalAmount = 0;
@@ -39,7 +95,7 @@ router.post('/', checkLogin, async function (req, res, next) {
     let discountAmount = 0;
     let validCouponCode = null;
     if (couponCode) {
-      let coupon = await pool.query(
+      let coupon = await client.query(
         `SELECT * FROM coupons WHERE code=$1 AND is_active=true AND is_deleted=false
          AND (expires_at IS NULL OR expires_at > NOW())
          AND (max_uses=0 OR used_count < max_uses)`,
@@ -54,14 +110,14 @@ router.post('/', checkLogin, async function (req, res, next) {
             discountAmount = parseFloat(c.value);
           }
           validCouponCode = c.code;
-          await pool.query('UPDATE coupons SET used_count=used_count+1 WHERE id=$1', [c.id]);
+          await client.query('UPDATE coupons SET used_count=used_count+1 WHERE id=$1', [c.id]);
         }
       }
     }
 
     let finalAmount = totalAmount - discountAmount;
 
-    let orderResult = await pool.query(
+    let orderResult = await client.query(
       `INSERT INTO orders (user_id, total_amount, discount_amount, final_amount, coupon_code,
         shipping_name, shipping_phone, shipping_address, notes, payment_method)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
@@ -85,7 +141,7 @@ router.post('/', checkLogin, async function (req, res, next) {
       let adjustment = Number(item.price_adjustment || 0);
       let unitPrice = basePrice + adjustment;
       let variantInfo = [item.size, item.color].filter(Boolean).join(' / ');
-      await pool.query(
+      await client.query(
         `INSERT INTO order_items (order_id, product_id, variant_id, product_title, variant_info, price, quantity, subtotal)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [
@@ -99,12 +155,27 @@ router.post('/', checkLogin, async function (req, res, next) {
           unitPrice * item.quantity
         ]
       );
+
+      await client.query(
+        'UPDATE inventories SET stock=stock-$1, updated_at=NOW() WHERE product_id=$2',
+        [item.quantity, item.product_id]
+      );
+      if (item.variant_id) {
+        await client.query(
+          'UPDATE product_variants SET stock=stock-$1, updated_at=NOW() WHERE id=$2 AND is_deleted=false',
+          [item.quantity, item.variant_id]
+        );
+      }
     }
 
-    await pool.query('DELETE FROM cart_items WHERE cart_id=$1', [cartId]);
+    await client.query('DELETE FROM cart_items WHERE cart_id=$1', [cartId]);
+    await client.query('COMMIT');
     res.send(order);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(400).send({ message: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -181,45 +252,72 @@ router.get('/:id', checkLogin, async function (req, res, next) {
 });
 
 router.post('/:id/cancel', checkLogin, async function (req, res, next) {
+  let client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     let userId = req.user.id;
-    let order = await pool.query(
-      'SELECT * FROM orders WHERE id=$1 AND user_id=$2 AND is_deleted=false',
+    let order = await client.query(
+      'SELECT * FROM orders WHERE id=$1 AND user_id=$2 AND is_deleted=false FOR UPDATE',
       [req.params.id, userId]
     );
     if (order.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).send({ message: 'id not found' });
     }
     if (order.rows[0].status !== 'PENDING') {
+      await client.query('ROLLBACK');
       return res.status(400).send({ message: 'chi huy duoc don o trang thai PENDING' });
     }
-    let result = await pool.query(
+    let result = await client.query(
       'UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *',
       ['CANCELLED', req.params.id]
     );
+    await restoreStockForOrder(client, req.params.id);
+    await client.query('COMMIT');
     res.send(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(400).send({ message: err.message });
+  } finally {
+    client.release();
   }
 });
 
 router.put('/admin/:id/status', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+  let client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     let { status } = req.body;
     let allowed = ['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'];
     if (!allowed.includes(status)) {
+      await client.query('ROLLBACK');
       return res.status(400).send({ message: 'status khong hop le' });
     }
-    let result = await pool.query(
+    let oldOrder = await client.query(
+      'SELECT id, status FROM orders WHERE id=$1 AND is_deleted=false FOR UPDATE',
+      [req.params.id]
+    );
+    if (oldOrder.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).send({ message: 'id not found' });
+    }
+
+    let result = await client.query(
       'UPDATE orders SET status=$1, updated_at=NOW() WHERE id=$2 AND is_deleted=false RETURNING *',
       [status, req.params.id]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).send({ message: 'id not found' });
+    if (status === 'CANCELLED' && oldOrder.rows[0].status !== 'CANCELLED') {
+      await restoreStockForOrder(client, req.params.id);
     }
+    await client.query('COMMIT');
     res.send(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(400).send({ message: err.message });
+  } finally {
+    client.release();
   }
 });
 

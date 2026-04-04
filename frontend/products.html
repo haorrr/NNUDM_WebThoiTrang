@@ -131,9 +131,8 @@
   </div>
 </footer>
 
-<script src="js/api.js?v=8"></script>
-<script src="js/security.js"></script>
-<script src="js/quick-buy.js?v=2"></script>
+<script src="js/api.js?v=9"></script>
+<script src="js/quick-buy.js?v=3"></script>
 <script>
 let currentPage = 0;
 let currentFilters = {};
@@ -241,16 +240,16 @@ function renderProductCard(p) {
   const isWished = wishlistIds.has(p.id);
   const isFlash = !!p.flashPrice;
   return `
-    <a class="product-card reveal" href="product-detail.html?id=${p.id}" style="display:block;text-decoration:none;color:inherit">
+    <div class="product-card reveal" onclick="goProductDetail(${p.id})">
       <div class="product-card__image">
         <img src="${imgUrl}" alt="${p.name}" loading="lazy">
         ${isNew && !isFlash ? '<span class="product-card__badge">Mới</span>' : ''}
         ${isFlash ? '<span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">🔥 FLASH</span>' : ''}
         ${p.stock === 0 ? '<span class="product-card__badge" style="background:#DC2626">Hết hàng</span>' : ''}
-        <button class="product-card__wish ${isWished ? 'active' : ''}" onclick="event.preventDefault();event.stopPropagation();toggleWishlist(event,${p.id})" title="Yêu thích">
+        <button class="product-card__wish ${isWished ? 'active' : ''}" onclick="event.stopPropagation();toggleWishlist(event,${p.id})" title="Yêu thích">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
-        <button class="product-card__quick-view" onclick="event.preventDefault();event.stopPropagation();openQuickBuy(${p.id})">Mua nhanh</button>
+        <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${p.id})">Mua nhanh</button>
       </div>
       <div class="product-card__info">
         <span class="product-card__category">${p.categoryName || p.category?.name || ''}</span>
@@ -261,8 +260,14 @@ function renderProductCard(p) {
         </div>
         ${isFlash && p.flashEndsAt ? `<div class="flash-countdown" data-ends-at="${p.flashEndsAt}" style="font-size:0.72rem;color:#DC2626;font-weight:600;margin-top:4px">⏱ ...</div>` : ''}
       </div>
-    </a>
+    </div>
   `;
+}
+
+function goProductDetail(id) {
+  if (!id) return;
+  try { sessionStorage.setItem('lastProductId', String(id)); } catch (e) {}
+  window.location.assign(`product-detail.html?id=${id}`);
 }
 
 async function toggleWishlist(event, productId) {

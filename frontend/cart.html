@@ -77,8 +77,7 @@
   <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
 </footer>
 
-<script src="js/api.js"></script>
-<script src="js/security.js"></script>
+<script src="js/api.js?v=9"></script>
 <script>
 let cartData = null;
 let appliedCoupon = null;
@@ -250,8 +249,11 @@ async function placeOrder() {
       couponCode: appliedCoupon?.code || null
     });
     if (res.success && res.data) {
+      showToast('Đặt hàng thành công!');
       closeCheckout();
-      window.location.href = `checkout-success.html?orderId=${res.data.id}`;
+      setTimeout(function () {
+        window.location.href = `checkout-success.html?orderId=${res.data.id}`;
+      }, 350);
       return;
     }
     throw new Error('Đặt hàng thất bại');

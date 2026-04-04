@@ -36,8 +36,7 @@
   <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
 </footer>
 
-<script src="js/api.js"></script>
-<script src="js/security.js"></script>
+<script src="js/api.js?v=9"></script>
 <script>
 const ORDER_STEPS = ['PENDING','CONFIRMED','SHIPPING','DELIVERED'];
 const STEP_LABELS = ['Chờ xác nhận','Đã xác nhận','Đang giao','Đã giao'];
@@ -49,11 +48,32 @@ const STEP_ICONS = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  if (!Auth.isLoggedIn()) {
+    document.getElementById('orderDetail').innerHTML = `<div class="alert alert-error">Vui lòng đăng nhập để xem chi tiết đơn hàng</div>`;
+    setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+    return;
+  }
   renderNavActions();
-  const params = new URLSearchParams(window.location.search);
-  const orderId = params.get('id');
-  if (!orderId) { window.location.href = 'orders.html'; return; }
+  const orderId = (function resolveOrderId() {
+    const params = new URLSearchParams(window.location.search);
+    let id = params.get('id');
+    if (id) return id;
+
+    const path = window.location.pathname || '';
+    const m = path.match(/order-detail(?:\.html)?\/(\d+)/i);
+    if (m && m[1]) return m[1];
+
+    try {
+      const saved = sessionStorage.getItem('lastOrderId');
+      if (saved) return saved;
+    } catch (e) {}
+    return null;
+  })();
+  if (!orderId) {
+    document.getElementById('orderDetail').innerHTML = `<div class="alert alert-error">Thiếu mã đơn hàng. Vui lòng quay lại trang đơn hàng.</div>`;
+    return;
+  }
+  try { sessionStorage.setItem('lastOrderId', String(orderId)); } catch (e) {}
 
   document.getElementById('orderIdHeader').textContent = `Mã đơn hàng: #${orderId}`;
 

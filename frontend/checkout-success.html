@@ -25,22 +25,30 @@
     <div id="orderInfo" style="background:#fff;border:1px solid var(--color-border);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:2rem"></div>
 
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="#" id="orderDetailBtn" class="btn btn-primary">Xem chi tiết đơn hàng</a>
       <a href="orders.html" class="btn btn-dark">Xem đơn hàng</a>
       <a href="products.html" class="btn btn-outline">Tiếp tục mua sắm</a>
     </div>
   </div>
 </div>
 
-<script src="js/api.js"></script>
-<script src="js/security.js"></script>
+<script src="js/api.js?v=9"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   renderNavActions();
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get('orderId');
-  if (!orderId || !Auth.isLoggedIn()) { window.location.href = 'index.html'; return; }
+  if (!orderId) {
+    window.location.href = 'index.html';
+    return;
+  }
 
   document.getElementById('orderId').textContent = `#${orderId}`;
+  const orderDetailBtn = document.getElementById('orderDetailBtn');
+  orderDetailBtn.href = `order-detail.html?id=${orderId}`;
+  orderDetailBtn.onclick = function () {
+    try { sessionStorage.setItem('lastOrderId', String(orderId)); } catch (e) {}
+  };
 
   try {
     const res = await api.orders.get(orderId);
