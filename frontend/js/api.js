@@ -224,9 +224,20 @@ const api = {
       delete p.size;
       delete p.sort;
       delete p.dir;
-      const rows = await rawFetch('/products?' + new URLSearchParams(p).toString());
-      const content = Array.isArray(rows) ? rows.map(normalizeProduct) : [];
-      return { success: true, data: { content: content, totalElements: content.length, totalPages: content.length > 0 ? 1 : 0 } };
+      const rs = await rawFetch('/products?' + new URLSearchParams(p).toString());
+      if (Array.isArray(rs)) {
+        const contentFallback = rs.map(normalizeProduct);
+        return { success: true, data: { content: contentFallback, totalElements: contentFallback.length, totalPages: contentFallback.length > 0 ? 1 : 0 } };
+      }
+      const content = Array.isArray(rs.content) ? rs.content.map(normalizeProduct) : [];
+      return {
+        success: true,
+        data: {
+          content: content,
+          totalElements: toNumber(rs.totalElements, content.length),
+          totalPages: toNumber(rs.totalPages, content.length > 0 ? 1 : 0)
+        }
+      };
     },
     get: async function (id) {
       const r = await rawFetch('/products/' + id);

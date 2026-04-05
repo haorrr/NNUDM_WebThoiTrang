@@ -10,6 +10,8 @@ router.get('/', async function (req, res, next) {
     let { title, categoryId, minPrice, maxPrice, status, inStock, page, limit } = req.query;
     page = page ? parseInt(page) : 1;
     limit = limit ? parseInt(limit) : 10;
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 10;
     let offset = (page - 1) * limit;
 
     let conditions = ['p.is_deleted=false'];
@@ -22,7 +24,17 @@ router.get('/', async function (req, res, next) {
       idx++;
     }
     if (categoryId) {
-      conditions.push('p.category_id=$' + idx);
+      conditions.push(`p.category_id IN (
+        WITH RECURSIVE subcats AS (
+          SELECT id FROM categories WHERE id=$${idx} AND is_deleted=false
+          UNION ALL
+          SELECT c.id
+          FROM categories c
+          JOIN subcats s ON c.parent_id=s.id
+          WHERE c.is_deleted=false
+        )
+        SELECT id FROM subcats
+      )`);
       params.push(categoryId);
       idx++;
     }
@@ -46,7 +58,17 @@ router.get('/', async function (req, res, next) {
     }
 
     let where = conditions.join(' AND ');
-    let result = await pool.query(
+    let countResult = await pool.query(
+      `SELECT COUNT(*)::int as total
+       FROM products p
+       LEFT JOIN inventories i ON i.product_id=p.id
+       WHERE ${where}`,
+      params
+    );
+    let totalElements = countResult.rows[0].total || 0;
+    let totalPages = Math.ceil(totalElements / limit);
+
+    let contentResult = await pool.query(
       `SELECT p.*, c.name as category_name,
               CASE WHEN COALESCE(v.cnt, 0) > 0 THEN COALESCE(v.total, 0) ELSE COALESCE(i.stock, 0) END as stock,
               (SELECT url FROM product_images WHERE product_id=p.id AND is_primary=true LIMIT 1) as primary_image
@@ -62,7 +84,13 @@ router.get('/', async function (req, res, next) {
        ORDER BY p.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, limit, offset]
     );
-    res.send(result.rows);
+    res.send({
+      content: contentResult.rows,
+      page: page,
+      limit: limit,
+      totalElements: totalElements,
+      totalPages: totalPages
+    });
   } catch (err) {
     res.status(400).send({ message: err.message });
   }

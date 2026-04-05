@@ -6,14 +6,29 @@ let { checkLogin, checkRole } = require('../utils/authHandler');
 
 router.get('/', async function (req, res, next) {
   let data = await pool.query(
-    `SELECT c.*, p.name as parent_name,
-            (
-              SELECT COUNT(*)::int
-              FROM products pr
-              WHERE pr.category_id=c.id AND pr.is_deleted=false
-            ) as product_count
-     FROM categories c LEFT JOIN categories p ON p.id=c.parent_id
-     WHERE c.is_deleted=false ORDER BY c.id`
+    `WITH RECURSIVE category_tree AS (
+       SELECT c0.id as root_id, c0.id as node_id
+       FROM categories c0
+       WHERE c0.is_deleted=false
+       UNION ALL
+       SELECT ct.root_id, c1.id as node_id
+       FROM category_tree ct
+       JOIN categories c1 ON c1.parent_id=ct.node_id
+       WHERE c1.is_deleted=false
+     ),
+     product_count_by_root AS (
+       SELECT ct.root_id, COUNT(pr.id)::int as product_count
+       FROM category_tree ct
+       LEFT JOIN products pr
+         ON pr.category_id=ct.node_id AND pr.is_deleted=false
+       GROUP BY ct.root_id
+     )
+     SELECT c.*, p.name as parent_name, COALESCE(pc.product_count, 0) as product_count
+     FROM categories c
+     LEFT JOIN categories p ON p.id=c.parent_id
+     LEFT JOIN product_count_by_root pc ON pc.root_id=c.id
+     WHERE c.is_deleted=false
+     ORDER BY c.id`
   );
   res.send(data.rows);
 });
@@ -21,13 +36,25 @@ router.get('/', async function (req, res, next) {
 router.get('/:id', async function (req, res, next) {
   try {
     let result = await pool.query(
-      `SELECT c.*, p.name as parent_name,
-              (
-                SELECT COUNT(*)::int
-                FROM products pr
-                WHERE pr.category_id=c.id AND pr.is_deleted=false
-              ) as product_count
-       FROM categories c LEFT JOIN categories p ON p.id=c.parent_id
+      `WITH RECURSIVE subtree AS (
+         SELECT id
+         FROM categories
+         WHERE id=$1 AND is_deleted=false
+         UNION ALL
+         SELECT c1.id
+         FROM categories c1
+         JOIN subtree s ON c1.parent_id=s.id
+         WHERE c1.is_deleted=false
+       ),
+       cnt AS (
+         SELECT COUNT(pr.id)::int as product_count
+         FROM subtree s
+         LEFT JOIN products pr ON pr.category_id=s.id AND pr.is_deleted=false
+       )
+       SELECT c.*, p.name as parent_name, cnt.product_count
+       FROM categories c
+       LEFT JOIN categories p ON p.id=c.parent_id
+       CROSS JOIN cnt
        WHERE c.id=$1 AND c.is_deleted=false`,
       [req.params.id]
     );
