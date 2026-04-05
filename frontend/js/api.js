@@ -103,6 +103,8 @@ function normalizeProduct(p) {
     description: p.description || '',
     price: toNumber(p.price, 0),
     salePrice: p.salePrice != null ? toNumber(p.salePrice, 0) : toNumber(p.sale_price, null),
+    flashPrice: p.flashPrice != null ? toNumber(p.flashPrice, 0) : toNumber(p.flash_price, null),
+    flashEndsAt: p.flashEndsAt || p.flash_ends_at || null,
     status: p.status || 'ACTIVE',
     categoryId: p.categoryId || p.category_id || null,
     categoryName: categoryName,
@@ -498,6 +500,7 @@ const api = {
           variantId: it.variant_id,
           productName: it.product_title,
           productTitle: it.product_title,
+          imageUrl: toAbsoluteAssetUrl(it.image_url || it.imageUrl || ''),
           quantity: it.quantity,
           price: toNumber(it.price, 0),
           subtotal: toNumber(it.subtotal, 0)

@@ -71,6 +71,13 @@ router.get('/', async function (req, res, next) {
     let contentResult = await pool.query(
       `SELECT p.*, c.name as category_name,
               CASE WHEN COALESCE(v.cnt, 0) > 0 THEN COALESCE(v.total, 0) ELSE COALESCE(i.stock, 0) END as stock,
+              fs.discount_percent as flash_discount_percent,
+              fs.ends_at as flash_ends_at,
+              CASE
+                WHEN fs.discount_percent IS NOT NULL
+                THEN ROUND((COALESCE(p.sale_price, p.price)::numeric * (100 - fs.discount_percent) / 100), 0)
+                ELSE NULL
+              END as flash_price,
               (SELECT url FROM product_images WHERE product_id=p.id AND is_primary=true LIMIT 1) as primary_image
        FROM products p
        LEFT JOIN categories c ON c.id=p.category_id
@@ -80,6 +87,18 @@ router.get('/', async function (req, res, next) {
          FROM product_variants pv
          WHERE pv.product_id=p.id AND pv.is_deleted=false
        ) v ON true
+       LEFT JOIN LATERAL (
+         SELECT fs1.discount_percent, fs1.ends_at
+         FROM flash_sale_products fsp
+         JOIN flash_sales fs1 ON fs1.id=fsp.flash_sale_id
+         WHERE fsp.product_id=p.id
+           AND fs1.is_deleted=false
+           AND fs1.status IN ('ACTIVE', 'SCHEDULED')
+           AND fs1.starts_at <= NOW()
+           AND fs1.ends_at >= NOW()
+         ORDER BY fs1.discount_percent DESC, fs1.ends_at ASC
+         LIMIT 1
+       ) fs ON true
        WHERE ${where}
        ORDER BY p.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, limit, offset]

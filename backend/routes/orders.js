@@ -3,6 +3,25 @@ var router = express.Router();
 let pool = require('../db/index');
 let { checkLogin, checkRole } = require('../utils/authHandler');
 
+let adjustFlashSaleSoldCountByItems = async function (client, items, delta) {
+  for (let item of items) {
+    let quantity = Number(item.quantity || 0);
+    if (quantity <= 0) continue;
+    await client.query(
+      `UPDATE flash_sale_products fsp
+       SET sold_count = GREATEST(0, sold_count + ($1 * $2))
+       FROM flash_sales fs
+       WHERE fsp.flash_sale_id=fs.id
+         AND fsp.product_id=$3
+         AND fs.is_deleted=false
+         AND fs.status IN ('ACTIVE', 'SCHEDULED')
+         AND fs.starts_at <= NOW()
+         AND fs.ends_at >= NOW()`,
+      [delta, quantity, item.product_id]
+    );
+  }
+};
+
 let syncInventoryFromVariants = async function (client, productId) {
   let sum = await client.query(
     'SELECT COALESCE(SUM(stock), 0)::int as total FROM product_variants WHERE product_id=$1 AND is_deleted=false',
@@ -41,6 +60,7 @@ let restoreStockForOrder = async function (client, orderId) {
       );
     }
   }
+  await adjustFlashSaleSoldCountByItems(client, items.rows, -1);
 };
 
 router.post('/', checkLogin, async function (req, res, next) {
@@ -189,6 +209,7 @@ router.post('/', checkLogin, async function (req, res, next) {
         );
       }
     }
+    await adjustFlashSaleSoldCountByItems(client, items.rows, 1);
 
     await client.query('DELETE FROM cart_items WHERE cart_id=$1', [cartId]);
     await client.query('COMMIT');
@@ -264,7 +285,14 @@ router.get('/:id', checkLogin, async function (req, res, next) {
     }
 
     let items = await pool.query(
-      'SELECT * FROM order_items WHERE order_id=$1',
+      `SELECT oi.*,
+              (SELECT url
+               FROM product_images
+               WHERE product_id=oi.product_id AND is_primary=true
+               ORDER BY id
+               LIMIT 1) as image_url
+       FROM order_items oi
+       WHERE oi.order_id=$1`,
       [req.params.id]
     );
     res.send({ ...order.rows[0], items: items.rows });
