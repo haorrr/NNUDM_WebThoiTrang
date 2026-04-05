@@ -282,14 +282,22 @@ function goProductDetail(id) {
 
 async function toggleWishlist(event, productId) {
   if (!Auth.isLoggedIn()) { window.location.href = '/login.html'; return; }
+  const btn = (event && (event.currentTarget || event.target)) || null;
+  const prev = wishlistIds.has(productId);
+  const next = !prev;
+  if (next) wishlistIds.add(productId); else wishlistIds.delete(productId);
+  if (btn && btn.classList) btn.classList.toggle('active', next);
   try {
     const res = await api.wishlist.toggle(productId);
     const wishlisted = !!(res.data?.wishlisted || res.data?.isWishlisted);
     if (wishlisted) wishlistIds.add(productId); else wishlistIds.delete(productId);
-    const btn = event.currentTarget;
-    btn.classList.toggle('active', wishlisted);
+    if (btn && btn.classList) btn.classList.toggle('active', wishlisted);
     showToast(wishlisted ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích');
-  } catch {}
+  } catch {
+    if (prev) wishlistIds.add(productId); else wishlistIds.delete(productId);
+    if (btn && btn.classList) btn.classList.toggle('active', prev);
+    showToast('Không thể cập nhật yêu thích', 'error');
+  }
 }
 
 async function loadProducts() {

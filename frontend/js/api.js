@@ -162,6 +162,14 @@ async function rawFetch(endpoint, options) {
   const res = await fetch(url, Object.assign({}, options || {}, { headers: headers }));
   const data = await res.json().catch(function () { return null; });
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      Auth.clear();
+      setTimeout(function () {
+        try {
+          if (typeof renderNavActions === 'function') renderNavActions();
+        } catch (e) {}
+      }, 0);
+    }
     const message = data && data.message ? data.message : ('HTTP ' + res.status);
     throw { status: res.status, message: message, data: data };
   }
