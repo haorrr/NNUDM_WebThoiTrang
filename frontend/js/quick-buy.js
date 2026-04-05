@@ -143,19 +143,30 @@
   }
 
   function getAvailableStock() {
+    const flashRemain = currentProduct?.flashRemaining;
+    const capByFlash = (flashRemain != null && !Number.isNaN(Number(flashRemain))) ? Number(flashRemain) : null;
     if (selectedVariantId) {
       const v = currentProduct.variants.find(vv => vv.id === selectedVariantId);
-      return v ? v.stock : 0;
+      const variantStock = v ? Number(v.stock || 0) : 0;
+      return capByFlash == null ? variantStock : Math.max(0, Math.min(variantStock, capByFlash));
     }
-    return currentProduct?.stock || 0;
+    const baseStock = Number(currentProduct?.stock || 0);
+    return capByFlash == null ? baseStock : Math.max(0, Math.min(baseStock, capByFlash));
   }
 
   function updateStockInfo() {
     const stock = getAvailableStock();
     const el = document.getElementById('qb-stock-info');
-    el.textContent = stock > 0 ? `Còn ${stock} sản phẩm` : 'Hết hàng';
+    const hasFlashCap = currentProduct?.flashRemaining != null;
+    el.textContent = stock > 0
+      ? (hasFlashCap ? `Flash còn ${stock} sản phẩm` : `Còn ${stock} sản phẩm`)
+      : 'Hết hàng';
     el.style.color = stock > 0 ? 'var(--color-text-muted)' : '#DC2626';
     document.getElementById('qb-add-btn').disabled = stock === 0;
+    if (qty > stock) {
+      qty = Math.max(1, stock);
+      document.getElementById('qb-qty').textContent = String(qty);
+    }
   }
 
   window.qbChangeQty = function (delta) {

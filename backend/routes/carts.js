@@ -53,6 +53,10 @@ router.post('/add-items', checkLogin, async function (req, res, next) {
     if (!productId) {
       return res.status(400).send({ message: 'productId la bat buoc' });
     }
+    let addQty = Number(quantity || 1);
+    if (!Number.isFinite(addQty) || addQty <= 0) {
+      return res.status(400).send({ message: 'quantity khong hop le' });
+    }
 
     let cart = await pool.query('SELECT id FROM carts WHERE user_id=$1', [userId]);
     let cartId;
@@ -67,9 +71,34 @@ router.post('/add-items', checkLogin, async function (req, res, next) {
       'SELECT id, quantity FROM cart_items WHERE cart_id=$1 AND product_id=$2 AND (variant_id=$3 OR (variant_id IS NULL AND $3 IS NULL))',
       [cartId, productId, variantId || null]
     );
+    let totalInCartByProduct = await pool.query(
+      'SELECT COALESCE(SUM(quantity), 0)::int as total FROM cart_items WHERE cart_id=$1 AND product_id=$2',
+      [cartId, productId]
+    );
+    let currentTotal = Number(totalInCartByProduct.rows[0].total || 0);
+
+    let flash = await pool.query(
+      `SELECT fsp.stock_limit, fsp.sold_count
+       FROM flash_sale_products fsp
+       JOIN flash_sales fs ON fs.id=fsp.flash_sale_id
+       WHERE fsp.product_id=$1
+         AND fs.is_deleted=false
+         AND fs.status IN ('ACTIVE', 'SCHEDULED')
+         AND fs.starts_at <= NOW()
+         AND fs.ends_at >= NOW()
+       ORDER BY fs.discount_percent DESC, fs.ends_at ASC
+       LIMIT 1`,
+      [productId]
+    );
+    if (flash.rows.length > 0) {
+      let remaining = Number(flash.rows[0].stock_limit || 0) - Number(flash.rows[0].sold_count || 0);
+      if (currentTotal + addQty > remaining) {
+        return res.status(400).send({ message: 'vuot qua so luong flash sale con lai (' + Math.max(remaining, 0) + ')' });
+      }
+    }
 
     if (existItem.rows.length > 0) {
-      let newQty = existItem.rows[0].quantity + (quantity || 1);
+      let newQty = existItem.rows[0].quantity + addQty;
       await pool.query(
         'UPDATE cart_items SET quantity=$1, updated_at=NOW() WHERE id=$2',
         [newQty, existItem.rows[0].id]
@@ -77,7 +106,7 @@ router.post('/add-items', checkLogin, async function (req, res, next) {
     } else {
       await pool.query(
         'INSERT INTO cart_items (cart_id, product_id, variant_id, quantity) VALUES ($1,$2,$3,$4)',
-        [cartId, productId, variantId || null, quantity || 1]
+        [cartId, productId, variantId || null, addQty]
       );
     }
 

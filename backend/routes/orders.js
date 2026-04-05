@@ -9,7 +9,7 @@ let adjustFlashSaleSoldCountByItems = async function (client, items, delta) {
     if (quantity <= 0) continue;
     await client.query(
       `UPDATE flash_sale_products fsp
-       SET sold_count = GREATEST(0, sold_count + ($1 * $2))
+       SET sold_count = GREATEST(0, sold_count + (($1::int) * ($2::int)))
        FROM flash_sales fs
        WHERE fsp.flash_sale_id=fs.id
          AND fsp.product_id=$3
@@ -116,6 +116,28 @@ router.post('/', checkLogin, async function (req, res, next) {
     }
 
     for (let item of items.rows) {
+      let flash = await client.query(
+        `SELECT fsp.stock_limit, fsp.sold_count
+         FROM flash_sale_products fsp
+         JOIN flash_sales fs ON fs.id=fsp.flash_sale_id
+         WHERE fsp.product_id=$1
+           AND fs.is_deleted=false
+           AND fs.status IN ('ACTIVE', 'SCHEDULED')
+           AND fs.starts_at <= NOW()
+           AND fs.ends_at >= NOW()
+         ORDER BY fs.discount_percent DESC, fs.ends_at ASC
+         LIMIT 1
+         FOR UPDATE`,
+        [item.product_id]
+      );
+      if (flash.rows.length > 0) {
+        let remaining = Number(flash.rows[0].stock_limit || 0) - Number(flash.rows[0].sold_count || 0);
+        if (remaining < item.quantity) {
+          await client.query('ROLLBACK');
+          return res.status(400).send({ message: 'san pham "' + item.title + '" vuot qua so luong flash sale con lai' });
+        }
+      }
+
       if (item.variant_id) {
         let variant = await client.query(
           'SELECT stock FROM product_variants WHERE id=$1 AND is_deleted=false FOR UPDATE',

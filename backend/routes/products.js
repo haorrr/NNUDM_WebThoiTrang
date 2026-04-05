@@ -73,6 +73,13 @@ router.get('/', async function (req, res, next) {
               CASE WHEN COALESCE(v.cnt, 0) > 0 THEN COALESCE(v.total, 0) ELSE COALESCE(i.stock, 0) END as stock,
               fs.discount_percent as flash_discount_percent,
               fs.ends_at as flash_ends_at,
+              fs.stock_limit as flash_stock_limit,
+              fs.sold_count as flash_sold_count,
+              CASE
+                WHEN fs.stock_limit IS NOT NULL
+                THEN GREATEST(0, fs.stock_limit - fs.sold_count)
+                ELSE NULL
+              END as flash_remaining,
               CASE
                 WHEN fs.discount_percent IS NOT NULL
                 THEN ROUND((COALESCE(p.sale_price, p.price)::numeric * (100 - fs.discount_percent) / 100), 0)
@@ -88,7 +95,7 @@ router.get('/', async function (req, res, next) {
          WHERE pv.product_id=p.id AND pv.is_deleted=false
        ) v ON true
        LEFT JOIN LATERAL (
-         SELECT fs1.discount_percent, fs1.ends_at
+         SELECT fs1.discount_percent, fs1.ends_at, fsp.stock_limit, fsp.sold_count
          FROM flash_sale_products fsp
          JOIN flash_sales fs1 ON fs1.id=fsp.flash_sale_id
          WHERE fsp.product_id=p.id
