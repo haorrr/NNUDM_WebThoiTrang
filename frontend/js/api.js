@@ -348,6 +348,7 @@ const api = {
           slug: c.slug,
           imageUrl: c.image_url || '',
           parentId: c.parent_id || null,
+          productCount: toNumber(c.product_count, 0),
           status: c.status || 'ACTIVE',
           children: []
         };
@@ -363,7 +364,7 @@ const api = {
     },
     get: async function (id) {
       const c = await rawFetch('/categories/' + id);
-      return { success: true, data: { id: c.id, name: c.name, slug: c.slug, status: c.status, parentId: c.parent_id || null } };
+      return { success: true, data: { id: c.id, name: c.name, slug: c.slug, status: c.status, parentId: c.parent_id || null, productCount: toNumber(c.product_count, 0) } };
     },
     create: function (data) { return apiFetch('/categories', { method: 'POST', body: JSON.stringify(data) }); },
     update: function (id, data) { return apiFetch('/categories/' + id, { method: 'PUT', body: JSON.stringify(data) }); },
