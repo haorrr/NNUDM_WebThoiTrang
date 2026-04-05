@@ -695,6 +695,7 @@ const api = {
         const productId = r.product_id || r.productId || r.id;
         const price = toNumber(r.price, 0);
         const salePrice = r.sale_price != null ? toNumber(r.sale_price, 0) : null;
+        const flashPrice = r.flash_price != null ? toNumber(r.flash_price, 0) : null;
         return {
           id: productId,
           productId: productId,
@@ -703,7 +704,8 @@ const api = {
           slug: r.slug || '',
           price: price,
           salePrice: salePrice,
-          flashPrice: null,
+          flashPrice: flashPrice,
+          flashEndsAt: r.flash_ends_at || null,
           categoryName: r.category_name || '',
           primaryImageUrl: toAbsoluteAssetUrl(r.primary_image || r.image || ''),
           imageUrl: toAbsoluteAssetUrl(r.primary_image || r.image || '')
@@ -711,7 +713,11 @@ const api = {
       });
       return { success: true, data: items };
     },
-    toggle: function (productId) { return apiFetch('/wishlists/' + productId, { method: 'POST' }); },
+    toggle: async function (productId) {
+      const rs = await rawFetch('/wishlists/' + productId, { method: 'POST' });
+      const wished = !!(rs.wishlisted || rs.isWishlisted);
+      return { success: true, data: { wishlisted: wished, isWishlisted: wished } };
+    },
     check: async function (productId) {
       const r = await rawFetch('/wishlists/check/' + productId);
       return { success: true, data: { wishlisted: !!r.isWishlisted, isWishlisted: !!r.isWishlisted } };

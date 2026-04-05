@@ -131,7 +131,7 @@
   </div>
 </footer>
 
-<script src="js/api.js?v=14"></script>
+<script src="js/api.js?v=15"></script>
 <script src="js/quick-buy.js?v=5"></script>
 <script>
 let currentPage = 0;
@@ -284,7 +284,7 @@ async function toggleWishlist(event, productId) {
   if (!Auth.isLoggedIn()) { window.location.href = '/login.html'; return; }
   try {
     const res = await api.wishlist.toggle(productId);
-    const wishlisted = res.data?.wishlisted;
+    const wishlisted = !!(res.data?.wishlisted || res.data?.isWishlisted);
     if (wishlisted) wishlistIds.add(productId); else wishlistIds.delete(productId);
     const btn = event.currentTarget;
     btn.classList.toggle('active', wishlisted);
@@ -372,11 +372,11 @@ function goToPage(page) {
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   renderNavActions();
   loadCategories();
+  await loadWishlistIds();
   loadProducts();
-  loadWishlistIds();
 
   // Navbar scroll
   window.addEventListener('scroll', () => {
