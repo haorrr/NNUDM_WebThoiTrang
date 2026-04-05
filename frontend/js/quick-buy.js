@@ -76,13 +76,13 @@
     document.getElementById('qb-qty').textContent = '1';
 
     // Price
-    const flashPrice = p.flashPrice;
-    const price = p.salePrice || p.price;
-    let priceHtml = `<span class="current">${formatVND(flashPrice || price)}</span>`;
-    if (flashPrice) {
-      priceHtml += ` <span class="original">${formatVND(price)}</span>`;
+    const flashPrice = p.flashPrice != null ? Number(p.flashPrice) : (p.flash_price != null ? Number(p.flash_price) : null);
+    const basePrice = p.salePrice != null ? Number(p.salePrice) : (p.sale_price != null ? Number(p.sale_price) : Number(p.price || 0));
+    let priceHtml = `<span class="current">${formatVND(flashPrice != null ? flashPrice : basePrice)}</span>`;
+    if (flashPrice != null) {
+      priceHtml += ` <span class="original">${formatVND(basePrice)}</span>`;
       document.getElementById('qb-flash-badge').style.display = 'block';
-    } else if (p.salePrice) {
+    } else if (p.salePrice != null || p.sale_price != null) {
       priceHtml += ` <span class="original">${formatVND(p.price)}</span>`;
       document.getElementById('qb-flash-badge').style.display = 'none';
     } else {

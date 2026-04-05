@@ -77,7 +77,7 @@
   <div class="container"><div class="footer__bottom"><p>&copy; 2026 MAISON. All rights reserved.</p></div></div>
 </footer>
 
-<script src="js/api.js?v=11"></script>
+<script src="js/api.js?v=14"></script>
 <script>
 let cartData = null;
 let appliedCoupon = null;
@@ -127,7 +127,10 @@ function renderCart() {
               <div class="cart-item__info">
                 <div class="cart-item__name">${item.productName}</div>
                 <div class="cart-item__meta">${[item.size && `Size: ${item.size}`, item.color && `Màu: ${item.color}`].filter(Boolean).join(' · ')}</div>
-                <div class="cart-item__price">${formatVND(item.salePrice || item.price)}</div>
+                <div class="cart-item__price">
+                  <span style="${item.flashPrice ? 'color:#DC2626;font-weight:700' : ''}">${formatVND(item.flashPrice || item.salePrice || item.price)}</span>
+                  ${(item.flashPrice || item.salePrice) ? `<span style="margin-left:6px;color:var(--color-text-muted);text-decoration:line-through;font-size:0.85rem">${formatVND(item.price)}</span>` : ''}
+                </div>
                 <div class="cart-item__actions" style="margin-top:10px">
                   <div class="qty-ctrl">
                     <button class="qty-btn" onclick="updateQty(${item.id}, ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>

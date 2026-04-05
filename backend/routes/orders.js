@@ -83,10 +83,30 @@ router.post('/', checkLogin, async function (req, res, next) {
     let cartId = cart.rows[0].id;
 
     let items = await client.query(
-      `SELECT ci.*, p.title, p.price, p.sale_price, pv.price_adjustment, pv.size, pv.color
+      `SELECT ci.*, p.title, p.price, p.sale_price,
+              fs.discount_percent as flash_discount_percent,
+              fs.ends_at as flash_ends_at,
+              CASE
+                WHEN fs.discount_percent IS NOT NULL
+                THEN ROUND((COALESCE(p.sale_price, p.price)::numeric * (100 - fs.discount_percent) / 100), 0)
+                ELSE NULL
+              END as flash_price,
+              pv.price_adjustment, pv.size, pv.color
        FROM cart_items ci
        JOIN products p ON p.id=ci.product_id
        LEFT JOIN product_variants pv ON pv.id=ci.variant_id
+       LEFT JOIN LATERAL (
+         SELECT fs1.discount_percent, fs1.ends_at
+         FROM flash_sale_products fsp
+         JOIN flash_sales fs1 ON fs1.id=fsp.flash_sale_id
+         WHERE fsp.product_id=p.id
+           AND fs1.is_deleted=false
+           AND fs1.status IN ('ACTIVE', 'SCHEDULED')
+           AND fs1.starts_at <= NOW()
+           AND fs1.ends_at >= NOW()
+         ORDER BY fs1.discount_percent DESC, fs1.ends_at ASC
+         LIMIT 1
+       ) fs ON true
        WHERE ci.cart_id=$1`,
       [cartId]
     );
@@ -127,7 +147,7 @@ router.post('/', checkLogin, async function (req, res, next) {
 
     let totalAmount = 0;
     for (let item of items.rows) {
-      let basePrice = Number(item.sale_price || item.price || 0);
+      let basePrice = Number(item.flash_price || item.sale_price || item.price || 0);
       let adjustment = Number(item.price_adjustment || 0);
       totalAmount += (basePrice + adjustment) * item.quantity;
     }
@@ -177,7 +197,7 @@ router.post('/', checkLogin, async function (req, res, next) {
     let order = orderResult.rows[0];
 
     for (let item of items.rows) {
-      let basePrice = Number(item.sale_price || item.price || 0);
+      let basePrice = Number(item.flash_price || item.sale_price || item.price || 0);
       let adjustment = Number(item.price_adjustment || 0);
       let unitPrice = basePrice + adjustment;
       let variantInfo = [item.size, item.color].filter(Boolean).join(' / ');

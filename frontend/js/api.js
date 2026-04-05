@@ -415,7 +415,7 @@ const api = {
     get: async function () {
       const rows = await rawFetch('/carts');
       const items = (rows || []).map(function (r) {
-        const unit = toNumber(r.sale_price || r.price, 0) + toNumber(r.price_adjustment, 0);
+        const unit = toNumber(r.flash_price || r.sale_price || r.price, 0) + toNumber(r.price_adjustment, 0);
         return {
           id: r.id,
           cartId: r.cart_id,
@@ -425,6 +425,7 @@ const api = {
           imageUrl: r.image,
           price: toNumber(r.price, 0),
           salePrice: r.sale_price != null ? toNumber(r.sale_price, 0) : null,
+          flashPrice: r.flash_price != null ? toNumber(r.flash_price, 0) : null,
           quantity: toNumber(r.quantity, 1),
           size: r.size || '',
           color: r.color || '',
