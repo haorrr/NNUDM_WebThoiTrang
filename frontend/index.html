@@ -387,14 +387,16 @@
           if (fs.products?.length > 0) {
             const fsGrid = document.getElementById('fs-section-grid');
             fsGrid.innerHTML = fs.products.slice(0, 4).map(entry => {
+              const productId = entry.productId || entry.id;
               const discPct = Math.round((1 - entry.flashPrice / entry.originalPrice) * 100);
               const imgUrl = entry.primaryImageUrl || 'images/product-jacket.png';
+              if (!productId) return '';
               return `
-                <div class="product-card reveal" onclick="window.location.href='product-detail.html?id=${entry.productId}'" style="cursor:pointer">
+                <div class="product-card reveal" onclick="window.location.href='product-detail.html?id=${productId}'" style="cursor:pointer">
                   <div class="product-card__image">
                     <img src="${imgUrl}" alt="${entry.productName}" loading="lazy">
                     <span class="product-card__badge" style="background:linear-gradient(90deg,#DC2626,#F97316)">-${discPct}%</span>
-                    <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${entry.productId})">Mua nhanh</button>
+                    <button class="product-card__quick-view" onclick="event.stopPropagation();openQuickBuy(${productId})">Mua nhanh</button>
                   </div>
                   <div class="product-card__info">
                     <h3 class="product-card__name">${entry.productName}</h3>
